@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>CDOE Workboard — Vignan's Online</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23E3231B'/><path d='M9 9h14v3H9zM9 15h14v3H9zM9 21h9v3H9z' fill='white'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ─────────────────────────────────────────────────────
+   Red and white from the Vignan's Online lockup. The ink is the
+   logo's own near-black. Everything else stays quiet.            */
+:root{
+  --red:#E3231B;
+  --red-deep:#B3140E;
+  --red-ink:#8E0F0A;
+  --red-wash:#FCE7E5;
+  --red-tint:#FFF5F4;
+  --ink:#231F20;
+  --ink-2:#5A5152;
+  --ink-3:#8C8284;
+  --rule:#EDE3E2;
+  --rule-2:#F6EFEE;
+  --white:#FFFFFF;
+  --ok:#1D7446;
+  --ok-wash:#E6F4EC;
+
+  --font:"Archivo", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  --r-sm:6px; --r:10px;
+  --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem;
+  --maxw:1440px;
+
+  /* activity types */
+  --t-holiday:#E3231B; --t-observance:#8E8483; --t-exam:#6D3FA3; --t-admission:#0F7B8A;
+  --t-orientation:#C8710A; --t-counselling:#3A7D2C; --t-webinar:#2F5FC4; --t-workshop:#8A1538;
+  --t-fdp:#B0448F; --t-meeting:#4A5568; --t-content:#7A5A1E; --t-event:#1D4E6E;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--white);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;font-variation-settings:"wdth" 100}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--red-deep)}
+:focus-visible{outline:2.5px solid var(--red);outline-offset:2px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* ── Header ───────────────────────────────────────────────────── */
+.top{border-bottom:1px solid var(--rule)}
+.top-in{max-width:var(--maxw);margin:0 auto;padding:var(--s3) var(--s5);display:flex;align-items:center;gap:var(--s5)}
+.logo{height:58px;width:auto;display:block}
+.brand{margin-left:auto;text-align:right;line-height:1.1}
+.brand h1{margin:0;font-size:1.65rem;font-weight:850;font-variation-settings:"wdth" 72;letter-spacing:-.01em;color:var(--ink)}
+.brand p{margin:.2rem 0 0;color:var(--ink-2);font-size:.85rem}
+.who{display:flex;align-items:center;gap:var(--s2);white-space:nowrap}
+.who .me{font-size:.85rem;color:var(--ink-2)}
+.who .me b{color:var(--ink);font-weight:650}
+
+/* The red band. Tabs are cut out of it: the active one turns white and
+   joins the page below, the way a divider tab joins its file.       */
+.band{background:var(--red);color:var(--white)}
+.band-in{max-width:var(--maxw);margin:0 auto;padding:0 var(--s5);display:flex;align-items:flex-end;gap:var(--s2);min-height:64px}
+.tab{appearance:none;border:0;background:transparent;color:#FFE3E0;cursor:pointer;
+  padding:.7rem 1.35rem .75rem;border-radius:var(--r) var(--r) 0 0;
+  font-size:1.35rem;font-weight:800;font-variation-settings:"wdth" 75;letter-spacing:.005em;line-height:1.1;
+  display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;text-align:left}
+.tab small{font-size:.75rem;font-weight:500;font-variation-settings:"wdth" 100;opacity:.85}
+.tab:hover{color:var(--white);background:rgba(255,255,255,.08)}
+.tab[aria-selected="true"]{background:var(--white);color:var(--red)}
+.tab[aria-selected="true"] small{color:var(--ink-2);opacity:1}
+.tab:focus-visible{outline-color:var(--white);outline-offset:-4px}
+.band-date{margin-left:auto;align-self:center;font-size:.9rem;color:#FFE3E0;white-space:nowrap}
+.band-date b{color:var(--white);font-weight:650}
+
+main{max-width:var(--maxw);margin:0 auto;padding:var(--s5) var(--s5) var(--s6)}
+
+/* ── Shared controls ─────────────────────────────────────────── */
+.btn{appearance:none;border:1.5px solid var(--red);background:var(--red);color:var(--white);
+  border-radius:var(--r-sm);padding:.5rem .95rem;font-weight:650;font-size:.9rem;cursor:pointer;line-height:1.2;white-space:nowrap}
+.btn:hover{background:var(--red-deep);border-color:var(--red-deep)}
+.btn.line{background:var(--white);color:var(--red-deep);border-color:var(--rule)}
+.btn.line:hover{border-color:var(--red);background:var(--red-tint)}
+.btn.plain{background:transparent;border-color:transparent;color:var(--red-deep);padding-inline:.5rem}
+.btn.plain:hover{background:var(--red-tint)}
+.btn.sm{padding:.35rem .7rem;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.onband{background:transparent;border-color:rgba(255,255,255,.55);color:var(--white)}
+.iconbtn{appearance:none;border:1.5px solid var(--rule);background:var(--white);border-radius:var(--r-sm);
+  width:36px;height:36px;display:grid;place-items:center;cursor:pointer;color:var(--ink)}
+.iconbtn:hover{border-color:var(--red);color:var(--red)}
+.iconbtn:disabled{opacity:.35;cursor:default;border-color:var(--rule);color:var(--ink)}
+input[type=text],input[type=search],input[type=password],input[type=date],input[type=url],select,textarea{
+  border:1.5px solid var(--rule);border-radius:var(--r-sm);background:var(--white);padding:.45rem .6rem;min-width:0}
+input:focus,select:focus,textarea:focus{border-color:var(--red);outline:none;box-shadow:0 0 0 3px var(--red-wash)}
+.field{display:flex;flex-direction:column;gap:.3rem;margin-bottom:var(--s4)}
+.field label{font-size:.82rem;font-weight:650;color:var(--ink-2)}
+.hint{font-size:.8rem;color:var(--ink-3)}
+.bad{color:var(--red-deep);font-weight:600}
+.row{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.grow{flex:1}
+.bar{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s4)}
+.seg{display:inline-flex;border:1.5px solid var(--rule);border-radius:var(--r-sm);overflow:hidden}
+.seg button{appearance:none;border:0;background:var(--white);padding:.42rem .85rem;font-weight:600;font-size:.85rem;cursor:pointer;color:var(--ink-2)}
+.seg button+button{border-left:1.5px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--white)}
+.check{display:inline-flex;align-items:center;gap:.4rem;font-size:.85rem;color:var(--ink-2);cursor:pointer}
+.check input{accent-color:var(--red);width:16px;height:16px}
+
+.notice{border-left:4px solid var(--red);background:var(--red-tint);padding:.7rem 1rem;border-radius:0 var(--r-sm) var(--r-sm) 0;margin:0 0 var(--s4);font-size:.9rem}
+.notice.ok{border-color:var(--ok);background:var(--ok-wash)}
+.empty{border:1.5px dashed var(--rule);border-radius:var(--r);padding:var(--s6) var(--s5);text-align:center;color:var(--ink-2)}
+.empty h3{margin:0 0 .4rem;color:var(--ink);font-size:1.2rem;font-weight:800;font-variation-settings:"wdth" 80}
+.empty p{margin:0 auto var(--s4);max-width:52ch}
+
+/* ── Day Tracker ─────────────────────────────────────────────── */
+.week{display:grid;grid-template-columns:auto repeat(6,minmax(0,1fr)) auto;gap:var(--s2);align-items:stretch;margin-bottom:var(--s4)}
+.week .iconbtn{align-self:center}
+.dayb{appearance:none;border:1.5px solid var(--rule);background:var(--white);border-radius:var(--r);padding:.5rem .65rem .55rem;
+  cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:.15rem;min-width:0;position:relative}
+.dayb:hover{border-color:var(--red)}
+.dayb .dw{font-size:.78rem;color:var(--ink-3);font-weight:600}
+.dayb .dn{font-size:1.35rem;font-weight:850;font-variation-settings:"wdth" 72;line-height:1}
+.dayb .fill{height:4px;background:var(--rule-2);border-radius:2px;overflow:hidden;margin-top:.35rem}
+.dayb .fill i{display:block;height:100%;background:var(--red);border-radius:2px}
+.dayb .pct{font-size:.72rem;color:var(--ink-3)}
+.dayb.hol{background:var(--red-tint)}
+.dayb.hol .dw::after{content:" · holiday";color:var(--red-deep)}
+.dayb[aria-current="date"]{border-color:var(--red);background:var(--red);color:var(--white)}
+.dayb[aria-current="date"] .dw,.dayb[aria-current="date"] .pct{color:#FFE3E0}
+.dayb[aria-current="date"] .dw::after{color:var(--white)}
+.dayb[aria-current="date"] .fill{background:rgba(255,255,255,.3)}
+.dayb[aria-current="date"] .fill i{background:var(--white)}
+.dayb.today::before{content:"";position:absolute;top:.55rem;right:.6rem;width:7px;height:7px;border-radius:50%;background:var(--red)}
+.dayb.today[aria-current="date"]::before{background:var(--white)}
+.dayb:disabled{opacity:.35;cursor:default}
+
+.dayhead{display:flex;align-items:flex-end;gap:var(--s4);flex-wrap:wrap;margin:var(--s5) 0 var(--s4)}
+.dayhead h2{margin:0;font-size:2rem;font-weight:850;font-variation-settings:"wdth" 70;line-height:1;letter-spacing:-.01em}
+.dayhead .tally{color:var(--ink-2);font-size:.92rem}
+.dayhead .tally b{color:var(--ink)}
+.holline{display:inline-flex;align-items:center;gap:.4rem;background:var(--red-wash);color:var(--red-ink);font-weight:650;font-size:.82rem;padding:.25rem .6rem;border-radius:99px}
+
+/* The grid. Column widths follow the slot lengths: 105 minutes, then three of 120. */
+.grid{--cols:minmax(210px,1.15fr) minmax(0,1.75fr) minmax(0,2fr) minmax(0,2fr) minmax(0,2fr);border:1.5px solid var(--rule);border-radius:var(--r);overflow:clip}
+.ghead{display:grid;grid-template-columns:var(--cols);background:var(--white);border-bottom:1.5px solid var(--ink);position:sticky;top:0;z-index:2}
+.ghead>div{padding:.65rem .75rem .55rem}
+.ghead .fac{font-size:.82rem;color:var(--ink-3);align-self:end}
+.slot-h{border-left:1px solid var(--rule)}
+.slot-h b{display:block;font-size:1.05rem;font-weight:800;font-variation-settings:"wdth" 78}
+.slot-h span{font-size:.8rem;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.slot-h .rule{display:flex;align-items:center;gap:.35rem;margin-top:.35rem}
+.slot-h .rule i{flex:1;height:3px;background:var(--red);border-radius:2px}
+.slot-h .rule::before,.slot-h .rule::after{content:"";width:3px;height:9px;background:var(--red);border-radius:1px}
+.frow{display:grid;grid-template-columns:var(--cols);border-top:1px solid var(--rule)}
+.frow:nth-child(even){background:#FFFCFC}
+.fcell{padding:.65rem .75rem;display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.fcell .nm{font-weight:700;line-height:1.25}
+.fcell .ds{font-size:.82rem;color:var(--ink-2)}
+.fcell .meta{display:flex;align-items:center;flex-wrap:wrap;gap:.25rem .5rem;margin-top:.3rem;font-size:.75rem;color:var(--ink-3)}
+.fcell .meta>span{white-space:nowrap}
+.fcell .meta .state{flex-basis:100%}
+.dots{display:inline-flex;gap:3px}
+.dots i{width:9px;height:9px;border-radius:2px;border:1.5px solid var(--red);background:transparent}
+.dots i.on{background:var(--red)}
+.state{font-size:.72rem;color:var(--ink-3)}
+.state.err{color:var(--red-deep);font-weight:650}
+.scell{border-left:1px solid var(--rule);padding:.45rem;min-width:0;position:relative}
+.scell .sl{display:none}
+.scell textarea{width:100%;min-height:74px;resize:vertical;border-color:transparent;background:transparent;padding:.4rem .5rem;line-height:1.4;font-size:.9rem;field-sizing:content;max-height:240px}
+.scell textarea:hover{border-color:var(--rule)}
+.scell textarea:focus{background:var(--white)}
+.scell textarea::placeholder{color:#C9BEBF}
+.scell.filled textarea{background:var(--white)}
+.scell.dirty textarea{border-color:#F3B5B1}
+.scell.err textarea{border-color:var(--red)}
+.scell textarea[readonly]{cursor:default}
+.scell textarea[readonly]:hover{border-color:transparent}
+.scell .stamp{position:absolute;right:.7rem;bottom:.3rem;font-size:.68rem;color:var(--ink-3);pointer-events:none;opacity:0;transition:opacity .15s}
+.scell:hover .stamp,.scell:focus-within .stamp{opacity:1}
+
+/* Week overview */
+.wk{border:1.5px solid var(--rule);border-radius:var(--r);overflow:auto}
+.wk table{border-collapse:collapse;width:100%;min-width:720px}
+.wk th,.wk td{padding:.55rem .7rem;border-bottom:1px solid var(--rule);text-align:left;vertical-align:middle}
+.wk thead th{font-size:.8rem;color:var(--ink-2);font-weight:650;border-bottom:1.5px solid var(--ink);background:var(--white);position:sticky;top:0}
+.wk thead th.hol{color:var(--red-deep)}
+.wk td.c{padding:.35rem .4rem}
+.wk .cellbtn{appearance:none;border:0;background:transparent;cursor:pointer;display:flex;align-items:center;gap:.45rem;padding:.3rem .4rem;border-radius:var(--r-sm);width:100%}
+.wk .cellbtn:hover{background:var(--red-tint)}
+.wk .cellbtn .n{font-size:.78rem;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.wk tfoot td{font-size:.8rem;color:var(--ink-2);border-bottom:0;background:var(--rule-2)}
+
+/* ── Activity Calendar ───────────────────────────────────────── */
+.calhead{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s4)}
+.calhead h2{margin:0;font-size:2rem;font-weight:850;font-variation-settings:"wdth" 70;line-height:1;min-width:9ch;letter-spacing:-.01em}
+.calwrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--s5);align-items:start}
+.month{border:1.5px solid var(--rule);border-radius:var(--r);overflow:hidden}
+.mdow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1.5px solid var(--ink)}
+.mdow div{padding:.5rem .6rem;font-size:.8rem;font-weight:650;color:var(--ink-2)}
+.mdow div:last-child{color:var(--ink-3)}
+.mweek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.mweek+.mweek{border-top:1px solid var(--rule)}
+.mday{min-height:112px;padding:.4rem .4rem .5rem;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:3px;min-width:0}
+.mday:first-child{border-left:0}
+.mday .d{font-size:.95rem;font-weight:750;font-variation-settings:"wdth" 80;padding:.1rem .25rem;align-self:flex-start;border-radius:5px;line-height:1.2}
+.mday.out{background:#FCFAFA}
+.mday.out .d{color:#CFC5C6}
+.mday.sun{background:#FBF8F8}
+.mday.sun .d{color:var(--ink-3)}
+.mday.hol{background:var(--red-tint)}
+.mday.today .d{background:var(--red);color:var(--white)}
+.chipb{appearance:none;border:0;cursor:pointer;text-align:left;width:100%;min-width:0;
+  font-size:.78rem;line-height:1.25;padding:.28rem .4rem .3rem .5rem;border-radius:4px;
+  background:color-mix(in srgb,var(--tone) 10%,white);color:var(--ink);border-left:3px solid var(--tone);
+  display:flex;gap:.3rem;align-items:flex-start}
+.chipb:hover{background:color-mix(in srgb,var(--tone) 18%,white)}
+.chipb .tx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.chipb.hol{background:transparent;border-left:0;padding-left:.25rem;color:var(--red-deep);font-weight:650}
+.chipb.cont{opacity:.7}
+.chipb.done .tx::before{content:"✓ ";color:var(--ok);font-weight:800}
+.chipb.gone{text-decoration:line-through;opacity:.5}
+.chipb .pf{margin-left:auto;flex:none;font-size:.68rem;color:var(--ink-3)}
+
+.side{display:flex;flex-direction:column;gap:var(--s5)}
+.side h3{margin:0 0 .5rem;font-size:1.05rem;font-weight:800;font-variation-settings:"wdth" 80}
+.side .count{color:var(--ink-3);font-weight:500;font-size:.85rem}
+.alist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.alist li+li{border-top:1px solid var(--rule)}
+.alist button{appearance:none;border:0;background:transparent;width:100%;text-align:left;cursor:pointer;padding:.55rem .3rem;display:grid;grid-template-columns:44px 1fr;gap:.6rem;align-items:start;border-radius:var(--r-sm)}
+.alist button:hover{background:var(--red-tint)}
+.alist .when{font-weight:800;font-variation-settings:"wdth" 72;font-size:1.25rem;line-height:1;text-align:center;border-top:3px solid var(--tone);padding-top:.25rem}
+.alist .when small{display:block;font-size:.66rem;font-weight:600;font-variation-settings:"wdth" 100;color:var(--ink-3);margin-top:.15rem}
+.alist .t{font-size:.87rem;font-weight:600;line-height:1.3}
+.alist .k{font-size:.75rem;color:var(--ink-2);margin-top:.15rem;display:flex;gap:.5rem;flex-wrap:wrap}
+.pill{display:inline-block;font-size:.7rem;font-weight:700;padding:.08rem .45rem;border-radius:99px;background:var(--rule-2);color:var(--ink-2)}
+.pill.ok{background:var(--ok-wash);color:var(--ok)}
+.pill.red{background:var(--red-wash);color:var(--red-ink)}
+.progress{border:1.5px solid var(--rule);border-radius:var(--r);padding:var(--s4)}
+.progress .big{font-size:2.1rem;font-weight:850;font-variation-settings:"wdth" 70;line-height:1}
+.progress .big span{font-size:1rem;color:var(--ink-3);font-weight:600}
+.progress .track{height:6px;background:var(--rule-2);border-radius:3px;margin:.6rem 0 .4rem;overflow:hidden}
+.progress .track i{display:block;height:100%;background:var(--red)}
+.legend{display:flex;flex-wrap:wrap;gap:.35rem .8rem;font-size:.78rem;color:var(--ink-2);margin-top:var(--s3)}
+.legend span{display:inline-flex;align-items:center;gap:.35rem}
+.legend i{width:10px;height:10px;border-radius:2px;background:var(--tone)}
+
+/* List / report */
+.report-head{display:none}
+.rtable{border:1.5px solid var(--rule);border-radius:var(--r);overflow:auto}
+.rtable table{border-collapse:collapse;width:100%;min-width:760px}
+.rtable th,.rtable td{padding:.6rem .75rem;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top;font-size:.88rem}
+.rtable thead th{font-size:.78rem;color:var(--ink-2);font-weight:650;border-bottom:1.5px solid var(--ink)}
+.rtable tr.mon td{background:var(--rule-2);font-weight:800;font-variation-settings:"wdth" 80;font-size:.95rem;color:var(--red-deep)}
+.rtable tr.ev{cursor:pointer}
+.rtable tr.ev:hover td{background:var(--red-tint)}
+.rtable .typ{display:inline-flex;align-items:center;gap:.35rem;white-space:nowrap}
+.rtable .typ i{width:9px;height:9px;border-radius:2px;background:var(--tone)}
+.rtable .links a{display:block;font-size:.8rem;word-break:break-all}
+.nowrap{white-space:nowrap}
+
+/* ── Dialogs ─────────────────────────────────────────────────── */
+dialog{border:0;border-radius:var(--r);padding:0;width:min(560px,calc(100vw - 2rem));max-height:calc(100vh - 2rem);box-shadow:0 24px 60px rgba(35,31,32,.28)}
+dialog.wide{width:min(900px,calc(100vw - 2rem))}
+dialog::backdrop{background:rgba(35,31,32,.45)}
+.dh{padding:var(--s4) var(--s5) var(--s3);border-top:5px solid var(--red);display:flex;align-items:flex-start;gap:var(--s3)}
+.dh h3{margin:0;font-size:1.4rem;font-weight:850;font-variation-settings:"wdth" 74;line-height:1.1}
+.dh p{margin:.3rem 0 0;color:var(--ink-2);font-size:.88rem}
+.dh .x{margin-left:auto;flex:none}
+.db{padding:var(--s3) var(--s5) var(--s4)}
+.df{padding:var(--s3) var(--s5) var(--s4);display:flex;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap;border-top:1px solid var(--rule)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 var(--s3)}
+.sec{border-top:1px solid var(--rule);padding-top:var(--s4);margin-top:var(--s2)}
+.sec h4{margin:0 0 .5rem;font-size:1rem;font-weight:800;font-variation-settings:"wdth" 80}
+.facts{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+.facts span{font-size:.8rem;background:var(--rule-2);padding:.15rem .55rem;border-radius:99px;color:var(--ink-2)}
+.facts .tone{background:color-mix(in srgb,var(--tone) 12%,white);color:color-mix(in srgb,var(--tone) 80%,black);font-weight:650}
+.proofs{list-style:none;margin:0 0 var(--s3);padding:0}
+.proofs li{display:flex;gap:.6rem;align-items:flex-start;padding:.5rem 0;border-bottom:1px solid var(--rule)}
+.proofs li div{flex:1;min-width:0}
+.proofs a{font-weight:650;word-break:break-all}
+.proofs small{display:block;color:var(--ink-3);font-size:.75rem}
+.ftable{max-height:48vh;overflow:auto;border:1.5px solid var(--rule);border-radius:var(--r-sm)}
+.ftable table{border-collapse:collapse;width:100%}
+.ftable th,.ftable td{padding:.45rem .6rem;border-bottom:1px solid var(--rule);text-align:left;font-size:.86rem}
+.ftable thead th{position:sticky;top:0;background:var(--white);font-size:.78rem;color:var(--ink-2);border-bottom:1.5px solid var(--ink)}
+.ftable tr.off td{color:var(--ink-3);text-decoration:line-through}
+.ftable tr.new td:first-child{box-shadow:inset 3px 0 0 var(--ok)}
+.drop{border:1.5px dashed #E9B3AF;background:var(--red-tint);border-radius:var(--r);padding:var(--s4);text-align:center;margin-bottom:var(--s4)}
+.drop p{margin:.2rem 0 .6rem;color:var(--ink-2);font-size:.88rem}
+
+.toast{position:fixed;left:50%;bottom:1.25rem;transform:translateX(-50%);background:var(--ink);color:var(--white);padding:.65rem 1rem;border-radius:var(--r-sm);font-size:.9rem;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.25);max-width:calc(100vw - 2rem)}
+.toast.bad{background:var(--red-deep)}
+.loading{color:var(--ink-3);padding:var(--s6) 0;text-align:center}
+
+footer{border-top:1px solid var(--rule);color:var(--ink-3);font-size:.8rem}
+footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);display:flex;gap:var(--s4);flex-wrap:wrap;justify-content:space-between}
+
+/* ── Smaller screens ─────────────────────────────────────────── */
+@media (max-width:1100px){
+  .calwrap{grid-template-columns:1fr}
+  .side{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5)}
+}
+@media (max-width:900px){
+  .top-in{flex-wrap:wrap;padding:var(--s3) var(--s4)}
+  .logo{height:44px}
+  .brand{margin-left:0;text-align:left;order:3;width:100%;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
+  .who{margin-left:auto}
+  .band-in{padding:0 var(--s3)}
+  .tab{font-size:1.1rem;padding:.6rem .9rem}
+  .band-date{display:none}
+  main{padding:var(--s4) var(--s3) var(--s5)}
+  .week{grid-template-columns:repeat(6,minmax(0,1fr))}
+  .week .iconbtn{display:none}
+  .dayb{padding:.4rem .45rem}
+  .dayb .dn{font-size:1.1rem}
+  .dayb .pct{display:none}
+  .dayb.hol .dw::after{content:""}
+  .grid{border:0;overflow:visible}
+  .ghead{display:none}
+  .frow{grid-template-columns:1fr 1fr;border:1.5px solid var(--rule);border-radius:var(--r);margin-bottom:var(--s3);background:var(--white)!important}
+  .frow .fcell{grid-column:1/-1;border-bottom:1px solid var(--rule)}
+  .scell{border-left:0}
+  .scell:nth-child(odd){border-left:1px solid var(--rule)}
+  .scell:nth-child(n+4){border-top:1px solid var(--rule)}
+  .scell .sl{display:block;font-size:.72rem;font-weight:700;color:var(--red-deep);padding:.1rem .5rem 0}
+  .mday{min-height:78px;padding:.25rem}
+  .chipb{font-size:.7rem;padding:.2rem .3rem}
+  .chipb .pf{display:none}
+  .side{grid-template-columns:1fr}
+  .dayhead h2,.calhead h2{font-size:1.6rem}
+}
+@media (max-width:560px){
+  .frow{grid-template-columns:1fr}
+  .scell:nth-child(odd){border-left:0}
+  .scell:nth-child(n+3){border-top:1px solid var(--rule)}
+  .mday .chipb:not(.hol) .tx{-webkit-line-clamp:1}
+  .grid2{grid-template-columns:1fr}
+  .tab small{display:none}
+}
+@media (prefers-reduced-motion:no-preference){
+  .dayb,.btn,.chipb,.tab{transition:background-color .15s,border-color .15s,color .15s}
+}
+
+/* ── Print: the activity report only ─────────────────────────── */
+@media print{
+  @page{margin:12mm}
+  body{font-size:11px}
+  .top,.band,footer,.calhead,.bar,.side,.noprint,.toast{display:none!important}
+  main{padding:0;max-width:none}
+  .report-head{display:block;margin-bottom:10px}
+  .report-head img{height:44px}
+  .report-head h2{margin:6px 0 0;font-size:18px}
+  .report-head p{margin:2px 0 0;color:#555}
+  .rtable{border:0;overflow:visible}
+  .rtable table{min-width:0}
+  .rtable th,.rtable td{padding:4px 6px}
+  .rtable tr{break-inside:avoid}
+  .rtable tr.mon td{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <img class="logo" src="/logo.jpg" alt="Vignan's Foundation for Science, Technology &amp; Research — Vignan's Online">
+    <div class="brand">
+      <h1>CDOE Workboard</h1>
+      <p>Centre for Distance and Online Education</p>
+    </div>
+    <div class="who" id="who"></div>
+  </div>
+</header>
+
+<nav class="band" aria-label="Sections">
+  <div class="band-in" role="tablist">
+    <button class="tab" role="tab" id="tab-calendar" data-tab="calendar" aria-selected="false">Activity Calendar<small>Department events, July – December 2026</small></button>
+    <button class="tab" role="tab" id="tab-tracker" data-tab="tracker" aria-selected="false">Day Tracker<small>Four slots for every faculty member, every working day</small></button>
+    <span class="band-date" id="bandDate"></span>
+  </div>
+</nav>
+
+<main id="view" aria-live="polite"><p class="loading">Loading the workboard…</p></main>
+
+<footer>
+  <div>
+    <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
+    <span id="foot"></span>
+  </div>
+</footer>
+
+<!-- Sign in -->
+<dialog id="dlgSign">
+  <div class="dh"><div><h3>Sign in to edit</h3><p>Anyone with the link can view. Signing in lets you fill slots, manage faculty and change the calendar.</p></div></div>
+  <div class="db">
+    <div class="field"><label for="sId">Login ID</label><input id="sId" type="text" autocomplete="username" inputmode="numeric"></div>
+    <div class="field"><label for="sPw">Password</label><input id="sPw" type="password" autocomplete="current-password"></div>
+    <div class="field"><label for="sName">Your name</label><input id="sName" type="text" autocomplete="name" placeholder="Shown against every change you make"></div>
+    <p class="hint bad" id="sErr" hidden></p>
+  </div>
+  <div class="df">
+    <button class="btn line" data-close>Cancel</button>
+    <button class="btn" id="sGo">Sign in</button>
+  </div>
+</dialog>
+
+<!-- Generic dialog, filled by the script -->
+<dialog id="dlg"></dialog>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   SETTINGS — change these and push to GitHub; Vercel redeploys.
+   ═══════════════════════════════════════════════════════════════ */
+const CONFIG = {
+  from: "2026-07-01",          // first day the site covers
+  to:   "2026-12-31",          // last day the site covers
+  workDays: [1,2,3,4,5,6],     // Monday to Saturday (0 = Sunday)
+  slots: [
+    { n:1, name:"Slot 1", from:"8:15 AM",  to:"10:00 AM" },
+    { n:2, name:"Slot 2", from:"10:00 AM", to:"12:00 PM" },
+    { n:3, name:"Slot 3", from:"12:00 PM", to:"2:00 PM"  },
+    { n:4, name:"Slot 4", from:"2:00 PM",  to:"4:00 PM"  }
+  ]
+};
+
+const TYPES = {
+  webinar:     { name:"Webinar",                 activity:true  },
+  workshop:    { name:"Workshop",                activity:true  },
+  fdp:         { name:"FDP / training",          activity:true  },
+  counselling: { name:"Counselling / live session", activity:true },
+  orientation: { name:"Orientation / induction", activity:true  },
+  admission:   { name:"Admissions",              activity:true  },
+  content:     { name:"Content development",     activity:true  },
+  meeting:     { name:"Meeting / review",        activity:true  },
+  event:       { name:"Department event",        activity:true  },
+  exam:        { name:"Examination",             activity:false },
+  holiday:     { name:"Holiday",                 activity:false },
+  observance:  { name:"Observance",              activity:false }
+};
+const PROOF_KINDS = ["Photographs","Attendance sheet","Event report","Brochure / poster",
+  "Recording link","Resource person profile","Feedback forms","Certificates","Minutes of meeting"];
+
+/* ═══════════════════════════════════════════════════════════════
+   Helpers
+   ═══════════════════════════════════════════════════════════════ */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const pad = n => String(n).padStart(2,"0");
+const D = s => new Date(s + "T12:00:00");
+const iso = d => d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate());
+const addDays = (s, n) => { const d = D(s); d.setDate(d.getDate()+n); return iso(d); };
+const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const todayISO = () => iso(new Date());
+const longDate = s => { const d = D(s); return DOW[d.getDay()] + ", " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear(); };
+const shortDate = s => { const d = D(s); return d.getDate() + " " + MON[d.getMonth()].slice(0,3); };
+const tone = cat => `var(--t-${TYPES[cat] ? cat : "event"})`;
+const isWork = s => CONFIG.workDays.includes(D(s).getDay());
+const inRange = s => s >= CONFIG.from && s <= CONFIG.to;
+const mondayOf = s => { const d = D(s); const k = (d.getDay()+6)%7; d.setDate(d.getDate()-k); return iso(d); };
+const spanText = e => e.start === e.end ? longDate(e.start)
+  : shortDate(e.start) + " – " + shortDate(e.end) + " " + D(e.end).getFullYear();
+
+function toast(msg, bad){
+  const t = $("#toast");
+  t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, bad ? 6000 : 2600);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   State and server
+   ═══════════════════════════════════════════════════════════════ */
+const state = {
+  tab: "tracker",
+  date: null,            // Day Tracker date
+  trView: "day",         // day | week
+  onlyOpen: false,
+  findFac: "",
+  month: null,           // "YYYY-MM"
+  calView: "month",      // month | list
+  filter: "all",
+  q: "",
+  showCancelled: false,
+  session: null,
+  events: [], proofs: [], faculty: [],
+  day: null,             // { day, faculty, entries }
+  counts: {},            // "date|emp" -> n
+  countsFor: null
+};
+
+try {
+  const s = JSON.parse(localStorage.getItem("cdoe.session") || "null");
+  if (s && s.token && s.exp > Date.now()) state.session = s;
+} catch {}
+
+async function get(what, params = {}){
+  let r, j;
+  try { r = await fetch("/api/read?" + new URLSearchParams({ what, ...params }), { cache:"no-store" }); }
+  catch { throw new Error("Could not reach the server. Check your internet connection."); }
+  try { j = await r.json(); } catch { throw new Error("The server did not answer properly. Check the Vercel deployment."); }
+  if (!j.ok) throw new Error(j.error || "Something went wrong");
+  return j;
+}
+
+async function post(action, payload = {}){
+  if (!state.session && action !== "login") { openSignIn(); throw new Error("Sign in to make changes"); }
+  let r, j;
+  try {
+    r = await fetch("/api/save", { method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ action, token: state.session?.token, ...payload }) });
+  } catch { throw new Error("Could not reach the server. Your change was not saved."); }
+  try { j = await r.json(); } catch { throw new Error("The server did not answer properly. Your change was not saved."); }
+  if (r.status === 401) { signOut(true); openSignIn(j.error); }
+  if (!j.ok) throw new Error(j.error || "Could not save");
+  return j;
+}
+
+function applyCalendar(j){ state.events = j.events || []; state.proofs = j.proofs || []; }
+
+/* ═══════════════════════════════════════════════════════════════
+   Sign in / out
+   ═══════════════════════════════════════════════════════════════ */
+function drawWho(){
+  const s = state.session;
+  $("#who").innerHTML = s
+    ? `<span class="me">Editing as <b>${esc(s.who)}</b></span><button class="btn line sm" id="outBtn">Sign out</button>`
+    : `<button class="btn sm" id="inBtn">Sign in to edit</button>`;
+}
+function openSignIn(msg){
+  const d = $("#dlgSign");
+  $("#sErr").hidden = !msg; $("#sErr").textContent = msg || "";
+  $("#sName").value = localStorage.getItem("cdoe.name") || "";
+  if (!d.open) d.showModal();
+  setTimeout(() => $("#sId").focus(), 30);
+}
+async function doSignIn(){
+  const id = $("#sId").value.trim(), pw = $("#sPw").value, name = $("#sName").value.trim();
+  if (!id || !pw) { $("#sErr").hidden = false; $("#sErr").textContent = "Enter the login ID and the password."; return; }
+  $("#sGo").disabled = true;
+  try {
+    const j = await post("login", { id, password: pw, name });
+    state.session = { token: j.token, who: j.who, exp: Date.now() + 11.5 * 3600e3 };
+    localStorage.setItem("cdoe.session", JSON.stringify(state.session));
+    if (name) localStorage.setItem("cdoe.name", name);
+    $("#sPw").value = "";
+    $("#dlgSign").close();
+    toast("Signed in. You can edit now.");
+    drawWho(); render();
+  } catch (e) {
+    $("#sErr").hidden = false; $("#sErr").textContent = e.message;
+  } finally { $("#sGo").disabled = false; }
+}
+function signOut(quiet){
+  state.session = null; localStorage.removeItem("cdoe.session");
+  drawWho(); render();
+  if (!quiet) toast("Signed out");
+}
+const canEdit = () => !!state.session;
+
+/* ═══════════════════════════════════════════════════════════════
+   Routing
+   ═══════════════════════════════════════════════════════════════ */
+function clampDay(s){
+  if (s < CONFIG.from) s = CONFIG.from;
+  if (s > CONFIG.to) s = CONFIG.to;
+  let guard = 0;
+  while (!isWork(s) && guard++ < 7) s = addDays(s, -1);   // Sunday → the Saturday before
+  if (!inRange(s)) { s = CONFIG.from; while (!isWork(s)) s = addDays(s, 1); }
+  return s;
+}
+function readHash(){
+  const [tab, arg, extra] = location.hash.replace(/^#\/?/, "").split("/");
+  state.tab = tab === "calendar" ? "calendar" : "tracker";
+  if (state.tab === "tracker") {
+    state.date = clampDay(/^\d{4}-\d{2}-\d{2}$/.test(arg || "") ? arg : todayISO());
+    state.trView = extra === "week" ? "week" : "day";
+  } else {
+    const def = todayISO().slice(0,7);
+    let m = /^\d{4}-\d{2}$/.test(arg || "") ? arg : def;
+    if (m < CONFIG.from.slice(0,7)) m = CONFIG.from.slice(0,7);
+    if (m > CONFIG.to.slice(0,7)) m = CONFIG.to.slice(0,7);
+    state.month = m;
+    state.calView = extra === "list" ? "list" : "month";
+  }
+}
+function go(hash){ if (location.hash !== hash) location.hash = hash; else route(); }
+function trackerHash(date = state.date, view = state.trView){ return "#tracker/" + date + (view === "week" ? "/week" : ""); }
+function calHash(month = state.month, view = state.calView){ return "#calendar/" + month + (view === "list" ? "/list" : ""); }
+
+async function route(){
+  if (pendingCount()) await flushAll();
+  readHash();
+  const want = state.tab === "tracker" ? trackerHash() : calHash();
+  if (location.hash && location.hash !== want) history.replaceState(null, "", want);
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
+  if (state.tab === "tracker") await loadTracker();
+  render();
+}
+
+function render(){
+  if (state.tab === "tracker") drawTracker(); else drawCalendar();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   DAY TRACKER
+   ═══════════════════════════════════════════════════════════════ */
+const holidayOn = s => state.events.find(e => !e.cancelled && e.category === "holiday" && e.start <= s && e.end >= s);
+
+function weekDays(of){
+  const mon = mondayOf(of), out = [];
+  for (let i = 0; i < 7; i++) { const s = addDays(mon, i); if (isWork(s)) out.push(s); }
+  return out;
+}
+
+async function loadTracker(){
+  const days = weekDays(state.date);
+  const from = days[0], to = days[days.length-1];
+  $("#view").innerHTML = `<p class="loading">Loading ${esc(longDate(state.date))}…</p>`;
+  try {
+    const [day, counts] = await Promise.all([
+      state.trView === "day" ? get("day", { date: state.date }) : Promise.resolve(null),
+      get("counts", { from, to })
+    ]);
+    state.day = day;
+    state.faculty = counts.faculty;
+    state.counts = {};
+    counts.counts.forEach(c => state.counts[c.day + "|" + c.emp_id] = c.n);
+    state.countsFor = { from, to };
+    state.loadError = null;
+  } catch (e) { state.loadError = e.message; }
+}
+
+function dayFill(s){
+  const n = state.faculty.length;
+  if (!n) return 0;
+  let tot = 0;
+  state.faculty.forEach(f => tot += state.counts[s + "|" + f.emp_id] || 0);
+  return tot / (n * CONFIG.slots.length);
+}
+
+function drawWeekStrip(){
+  const days = weekDays(state.date), t = todayISO();
+  const prev = addDays(days[0], -7), next = addDays(days[0], 7);
+  const prevOk = addDays(days[0], -1) >= CONFIG.from, nextOk = addDays(days[days.length-1], 1) <= CONFIG.to;
+  return `<div class="week" role="group" aria-label="Choose a day">
+    <button class="iconbtn" data-go="${prev}" ${prevOk ? "" : "disabled"} aria-label="Previous week">‹</button>
+    ${days.map(s => {
+      const d = D(s), h = holidayOn(s), p = Math.round(dayFill(s) * 100);
+      return `<button class="dayb${h ? " hol" : ""}${s === t ? " today" : ""}" data-day="${s}"
+        ${s === state.date && state.trView === "day" ? 'aria-current="date"' : ""} ${inRange(s) ? "" : "disabled"}
+        title="${esc(longDate(s) + (h ? " — " + h.title : ""))}">
+        <span class="dw">${DOW[d.getDay()].slice(0,3)}</span>
+        <span class="dn">${d.getDate()} <small style="font-size:.7em;font-weight:600">${MON[d.getMonth()].slice(0,3)}</small></span>
+        <span class="fill"><i style="width:${p}%"></i></span>
+        <span class="pct">${p}% filled</span>
+      </button>`;
+    }).join("")}
+    <button class="iconbtn" data-go="${next}" ${nextOk ? "" : "disabled"} aria-label="Next week">›</button>
+  </div>`;
+}
+
+function trackerBar(){
+  return `<div class="bar">
+    <div class="seg" role="group" aria-label="View">
+      <button data-trview="day" aria-pressed="${state.trView === "day"}">Day</button>
+      <button data-trview="week" aria-pressed="${state.trView === "week"}">Week overview</button>
+    </div>
+    <input type="date" id="pickDay" value="${state.date}" min="${CONFIG.from}" max="${CONFIG.to}" aria-label="Go to date">
+    <button class="btn line" id="todayBtn">Today</button>
+    <span class="grow"></span>
+    <input type="search" id="findFac" placeholder="Find faculty" value="${esc(state.findFac)}" style="width:180px" aria-label="Find faculty">
+    ${state.trView === "day" ? `<label class="check"><input type="checkbox" id="onlyOpen" ${state.onlyOpen ? "checked" : ""}> Only incomplete</label>` : ""}
+    <button class="btn line" id="facBtn">Faculty list (${state.faculty.length})</button>
+    <button class="btn line" id="xlBtn">Download Excel</button>
+  </div>`;
+}
+
+function drawTracker(){
+  const v = $("#view");
+  if (state.loadError) {
+    v.innerHTML = trackerBar() + `<div class="notice">${esc(state.loadError)}</div>`;
+    return;
+  }
+  if (!state.faculty.length) {
+    v.innerHTML = trackerBar() + `<div class="empty">
+      <h3>Add the faculty list to start</h3>
+      <p>Upload an Excel or CSV file with three columns: Name, Employee ID and Designation. Every faculty member then gets four slots for each working day.</p>
+      ${canEdit() ? `<button class="btn" id="facBtn2">Upload faculty list</button>` : `<button class="btn" id="signBtn2">Sign in to upload</button>`}
+    </div>`;
+    return;
+  }
+  if (state.trView === "week") { v.innerHTML = trackerBar() + drawWeekStrip() + drawWeekTable(); return; }
+
+  const s = state.date, h = holidayOn(s);
+  const entries = {};
+  (state.day?.entries || []).forEach(e => entries[e.emp_id + "|" + e.slot] = e);
+  const full = state.faculty.filter(f => (state.counts[s + "|" + f.emp_id] || 0) === 4).length;
+  const filled = state.faculty.reduce((a, f) => a + (state.counts[s + "|" + f.emp_id] || 0), 0);
+  const ro = !canEdit();
+
+  const needle = state.findFac.trim().toLowerCase();
+  const rows = state.faculty.filter(f =>
+    (!needle || (f.name + " " + f.emp_id + " " + f.designation).toLowerCase().includes(needle)) &&
+    (!state.onlyOpen || (state.counts[s + "|" + f.emp_id] || 0) < 4));
+
+  v.innerHTML = trackerBar() + drawWeekStrip() + `
+  <div class="dayhead">
+    <h2>${esc(longDate(s))}</h2>
+    <span class="tally"><b>${full}</b> of ${state.faculty.length} faculty complete · <b>${filled}</b> of ${state.faculty.length * 4} slots filled</span>
+    ${h ? `<span class="holline">Holiday: ${esc(h.title)}. Entries are optional.</span>` : ""}
+  </div>
+  ${ro ? `<div class="notice">You are viewing. <a href="#" id="signLink">Sign in</a> to fill or change slots.</div>` : ""}
+  <div class="grid" role="table" aria-label="Slots for ${esc(longDate(s))}">
+    <div class="ghead" role="row">
+      <div class="fac" role="columnheader">Faculty</div>
+      ${CONFIG.slots.map(sl => `<div class="slot-h" role="columnheader"><b>${sl.name}</b><span>${sl.from} – ${sl.to}</span><span class="rule"><i></i></span></div>`).join("")}
+    </div>
+    ${rows.length ? rows.map(f => {
+      const n = state.counts[s + "|" + f.emp_id] || 0;
+      return `<div class="frow" role="row" data-emp="${esc(f.emp_id)}">
+        <div class="fcell" role="rowheader">
+          <span class="nm">${esc(f.name)}</span>
+          <span class="ds">${esc(f.designation || "")}</span>
+          <span class="meta"><span class="dots" aria-label="${n} of 4 slots filled">${[1,2,3,4].map(k => `<i class="${entries[f.emp_id + "|" + k] ? "on" : ""}"></i>`).join("")}</span>
+            <span>ID ${esc(f.emp_id)}</span><span class="state" data-state></span></span>
+        </div>
+        ${CONFIG.slots.map(sl => {
+          const e = entries[f.emp_id + "|" + sl.n];
+          return `<div class="scell${e ? " filled" : ""}" role="cell">
+            <span class="sl">${sl.name} · ${sl.from} – ${sl.to}</span>
+            <textarea data-slot="${sl.n}" aria-label="${esc(f.name)}, ${sl.name}, ${sl.from} to ${sl.to}"
+              placeholder="${ro ? "Not updated" : "What was done in this slot"}" ${ro ? "readonly" : ""}>${esc(e ? e.body : "")}</textarea>
+            ${e ? `<span class="stamp">${esc(e.at)}${e.by ? " · " + esc(e.by) : ""}</span>` : ""}
+          </div>`;
+        }).join("")}
+      </div>`;
+    }).join("") : `<div class="empty" style="border:0">No faculty match. ${state.onlyOpen ? "Everyone has all four slots filled for this day." : ""}</div>`}
+  </div>`;
+}
+
+function drawWeekTable(){
+  const days = weekDays(state.date);
+  const needle = state.findFac.trim().toLowerCase();
+  const rows = state.faculty.filter(f => !needle || (f.name + " " + f.emp_id + " " + f.designation).toLowerCase().includes(needle));
+  const cell = (s, f) => {
+    const n = state.counts[s + "|" + f.emp_id] || 0;
+    return `<td class="c"><button class="cellbtn" data-openday="${s}" aria-label="${esc(f.name)}, ${esc(longDate(s))}: ${n} of 4 slots">
+      <span class="dots">${[1,2,3,4].map(k => `<i class="${k <= n ? "on" : ""}"></i>`).join("")}</span><span class="n">${n}/4</span></button></td>`;
+  };
+  return `<div class="dayhead"><h2>Week of ${esc(shortDate(days[0]))} – ${esc(shortDate(days[days.length-1]))}</h2>
+    <span class="tally">Slots filled per faculty member. Select a cell to open that day.</span></div>
+  <div class="wk"><table>
+    <thead><tr><th>Faculty</th>${days.map(s => { const h = holidayOn(s);
+      return `<th class="${h ? "hol" : ""}" title="${h ? esc(h.title) : ""}">${DOW[D(s).getDay()].slice(0,3)} ${D(s).getDate()}${h ? " · holiday" : ""}</th>`; }).join("")}</tr></thead>
+    <tbody>${rows.map(f => `<tr><td><b>${esc(f.name)}</b><div class="hint">${esc(f.designation)} · ID ${esc(f.emp_id)}</div></td>${days.map(s => cell(s, f)).join("")}</tr>`).join("")}</tbody>
+    <tfoot><tr><td>All faculty</td>${days.map(s => `<td>${Math.round(dayFill(s) * 100)}% filled</td>`).join("")}</tr></tfoot>
+  </table></div>`;
+}
+
+/* ── Autosave for slot boxes ─────────────────────────────────── */
+const pending = new Map();   // key -> { timer, busy, again, date, emp, slot }
+const pendingCount = () => [...pending.values()].filter(p => p.timer || p.busy || p.again).length;
+const keyOf = (date, emp, slot) => date + "|" + emp + "|" + slot;
+
+function queueSave(ta, now){
+  const row = ta.closest(".frow"), emp = row.dataset.emp, slot = Number(ta.dataset.slot), date = state.date;
+  const k = keyOf(date, emp, slot);
+  const p = pending.get(k) || { date, emp, slot };
+  p.ta = ta;
+  pending.set(k, p);
+  ta.closest(".scell").classList.add("dirty");
+  setRowState(row, "Unsaved changes");
+  clearTimeout(p.timer); p.timer = null;
+  if (now) saveOne(k); else p.timer = setTimeout(() => saveOne(k), 900);
+}
+
+async function saveOne(k){
+  const p = pending.get(k); if (!p) return;
+  clearTimeout(p.timer); p.timer = null;
+  if (p.busy) { p.again = true; return; }
+  p.busy = true; p.again = false;
+  const ta = p.ta, body = ta.value, row = ta.closest(".frow");
+  if (row) setRowState(row, "Saving…");
+  try {
+    const j = await post("setSlot", { date: p.date, emp_id: p.emp, slot: p.slot, body });
+    // keep local copies current
+    if (state.day && state.day.day === p.date) {
+      state.day.entries = state.day.entries.filter(e => !(e.emp_id === p.emp && e.slot === p.slot));
+      if (body.trim()) state.day.entries.push({ emp_id: p.emp, slot: p.slot, body, by: j.by, at: j.at });
+      const n = state.day.entries.filter(e => e.emp_id === p.emp).length;
+      state.counts[p.date + "|" + p.emp] = n;
+    }
+    if (ta.isConnected) {
+      const cell = ta.closest(".scell");
+      cell.classList.remove("dirty", "err");
+      cell.classList.toggle("filled", !!body.trim());
+      let st = cell.querySelector(".stamp");
+      if (body.trim()) { if (!st) { st = document.createElement("span"); st.className = "stamp"; cell.append(st); } st.textContent = j.at + " · " + j.by; }
+      else if (st) st.remove();
+      refreshRowBits(row, p.date);
+      setRowState(row, "Saved " + j.at.split(", ")[1]);
+    }
+  } catch (e) {
+    if (ta.isConnected) { ta.closest(".scell").classList.add("err"); setRowState(row, "Not saved. Type again or check your connection.", true); }
+    toast(e.message, true);
+    p.busy = false;
+    if (!p.again) { pending.delete(k); return; }
+  }
+  p.busy = false;
+  if (p.again) { p.again = false; saveOne(k); } else pending.delete(k);
+}
+
+async function flushAll(){
+  const keys = [...pending.keys()];
+  keys.forEach(k => { const p = pending.get(k); if (p && p.timer) saveOne(k); });
+  let guard = 0;
+  while (pendingCount() && guard++ < 60) await new Promise(r => setTimeout(r, 100));
+}
+
+function setRowState(row, text, bad){
+  const s = row && row.querySelector("[data-state]"); if (!s) return;
+  s.textContent = text; s.classList.toggle("err", !!bad);
+}
+function refreshRowBits(row, date){
+  if (!row) return;
+  const emp = row.dataset.emp;
+  const on = new Set((state.day?.entries || []).filter(e => e.emp_id === emp).map(e => e.slot));
+  $$(".dots i", row).forEach((i, idx) => i.classList.toggle("on", on.has(idx + 1)));
+  // strip and tally
+  const btn = $(`.dayb[data-day="${date}"]`);
+  if (btn) { const p = Math.round(dayFill(date) * 100); $(".fill i", btn).style.width = p + "%"; $(".pct", btn).textContent = p + "% filled"; }
+  const tally = $(".dayhead .tally");
+  if (tally) {
+    const full = state.faculty.filter(f => (state.counts[date + "|" + f.emp_id] || 0) === 4).length;
+    const filled = state.faculty.reduce((a, f) => a + (state.counts[date + "|" + f.emp_id] || 0), 0);
+    tally.innerHTML = `<b>${full}</b> of ${state.faculty.length} faculty complete · <b>${filled}</b> of ${state.faculty.length * 4} slots filled`;
+  }
+}
+
+window.addEventListener("beforeunload", e => { if (pendingCount()) { e.preventDefault(); e.returnValue = ""; } });
+
+/* ── Faculty list dialog ─────────────────────────────────────── */
+async function openFaculty(){
+  const d = $("#dlg"); d.className = "wide";
+  d.innerHTML = `<div class="dh"><div><h3>Faculty list</h3><p>Each person here gets four slots on every working day.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div><div class="db"><p class="loading">Loading…</p></div>`;
+  if (!d.open) d.showModal();
+  try {
+    const j = await get("faculty");
+    drawFacultyDialog(j.faculty);
+  } catch (e) { $(".db", d).innerHTML = `<div class="notice">${esc(e.message)}</div>`; }
+}
+
+function drawFacultyDialog(list, preview){
+  const d = $("#dlg"), ed = canEdit();
+  const active = list.filter(f => f.active), gone = list.filter(f => !f.active);
+  d.innerHTML = `<div class="dh"><div><h3>Faculty list</h3><p>${active.length} active${gone.length ? ", " + gone.length + " removed" : ""}. Each active person gets four slots on every working day.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    ${ed ? `<div class="drop">
+      <b>Upload an Excel or CSV file</b>
+      <p>Columns: Name, Employee ID, Designation. The first row can be headings. People already in the list are updated by their Employee ID.</p>
+      <div class="row" style="justify-content:center">
+        <label class="btn">Choose file<input type="file" id="facFile" accept=".xlsx,.xls,.csv" hidden></label>
+        <button class="btn line" id="tplBtn">Download a blank template</button>
+      </div>
+    </div>
+    <details style="margin-bottom:var(--s4)"><summary style="cursor:pointer;font-weight:650">Add one person</summary>
+      <div class="grid2" style="margin-top:.6rem;grid-template-columns:2fr 1fr 1.5fr auto;align-items:end;gap:.5rem">
+        <div class="field" style="margin:0"><label for="nfName">Name</label><input id="nfName" type="text"></div>
+        <div class="field" style="margin:0"><label for="nfId">Employee ID</label><input id="nfId" type="text"></div>
+        <div class="field" style="margin:0"><label for="nfDes">Designation</label><input id="nfDes" type="text"></div>
+        <button class="btn" id="nfAdd">Add</button>
+      </div>
+    </details>` : `<div class="notice">Sign in to upload or change the faculty list.</div>`}
+    <div class="ftable"><table>
+      <thead><tr><th>#</th><th>Name</th><th>Employee ID</th><th>Designation</th>${ed ? "<th></th>" : ""}</tr></thead>
+      <tbody>${list.length ? [...active, ...gone].map((f, i) => `<tr class="${f.active ? "" : "off"}" data-emp="${esc(f.emp_id)}">
+        <td>${f.active ? i + 1 : ""}</td>
+        <td>${ed && f.active ? `<input type="text" value="${esc(f.name)}" data-f="name" aria-label="Name">` : esc(f.name)}</td>
+        <td>${esc(f.emp_id)}</td>
+        <td>${ed && f.active ? `<input type="text" value="${esc(f.designation)}" data-f="designation" aria-label="Designation">` : esc(f.designation)}</td>
+        ${ed ? `<td class="nowrap">${f.active
+          ? `<button class="btn plain sm" data-facsave>Save</button><button class="btn plain sm" data-facdel>Remove</button>`
+          : `<button class="btn plain sm" data-facback>Restore</button>`}</td>` : ""}
+      </tr>`).join("") : `<tr><td colspan="5" class="hint">No faculty yet.</td></tr>`}</tbody>
+    </table></div>
+    ${gone.length ? `<p class="hint">Removed people keep their past entries. Restore them to show their slots again.</p>` : ""}
+  </div>`;
+}
+
+function pickHeader(rows, tests){
+  for (let r = 0; r < Math.min(rows.length, 12); r++) {
+    const cells = (rows[r] || []).map(c => String(c ?? "").trim().toLowerCase());
+    const idx = {};
+    for (const [k, re] of Object.entries(tests)) {
+      const i = cells.findIndex((c, j) => re.test(c) && !Object.values(idx).includes(j));
+      if (i >= 0) idx[k] = i;
+    }
+    if (Object.keys(idx).length >= 2) return { row: r, idx };
+  }
+  return null;
+}
+
+async function readSheet(file){
+  if (!window.XLSX) throw new Error("The spreadsheet reader has not loaded yet. Wait a moment and try again.");
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type:"array", cellDates:true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:"" });
+}
+
+async function handleFacultyFile(file){
+  try {
+    const rows = await readSheet(file);
+    const h = pickHeader(rows, {
+      emp: /(emp|employee|staff|faculty)\s*\.?\s*(id|code|no|number)|^id$|^code$|^emp$/,
+      name: /name/,
+      des: /desig|position|post|role|cadre/
+    });
+    let start = 0, ix = { name:0, emp:1, des:2 };
+    if (h && h.idx.name !== undefined && h.idx.emp !== undefined) { start = h.row + 1; ix = { des: -1, ...h.idx }; }
+    const clean = v => String(v ?? "").replace(/\.0$/, "").trim();
+    const out = [];
+    for (let r = start; r < rows.length; r++) {
+      const row = rows[r] || [];
+      const name = clean(row[ix.name]), emp = clean(row[ix.emp]), des = ix.des >= 0 ? clean(row[ix.des]) : "";
+      if (!name && !emp) continue;
+      out.push({ name, emp_id: emp, designation: des });
+    }
+    const bad = out.filter(r => !r.name || !r.emp_id);
+    const good = out.filter(r => r.name && r.emp_id);
+    const seen = new Set(), dup = new Set();
+    good.forEach(r => { if (seen.has(r.emp_id)) dup.add(r.emp_id); seen.add(r.emp_id); });
+    const existing = (await get("faculty")).faculty;
+    const known = new Set(existing.map(f => f.emp_id));
+    const fresh = good.filter(r => !known.has(r.emp_id)).length;
+    const missing = existing.filter(f => f.active && !seen.has(f.emp_id));
+
+    const d = $("#dlg");
+    d.innerHTML = `<div class="dh"><div><h3>Check the list before saving</h3>
+      <p>${esc(file.name)}: ${good.length} people found, ${fresh} new and ${good.length - fresh} already in the list.</p></div>
+      <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+    <div class="db">
+      ${bad.length ? `<div class="notice">${bad.length} row${bad.length > 1 ? "s are" : " is"} missing a name or an Employee ID and will be skipped.</div>` : ""}
+      ${dup.size ? `<div class="notice">These Employee IDs appear more than once: ${esc([...dup].join(", "))}. Fix the file and upload it again.</div>` : ""}
+      <div class="ftable"><table><thead><tr><th>#</th><th>Name</th><th>Employee ID</th><th>Designation</th></tr></thead>
+      <tbody>${good.map((r, i) => `<tr class="${known.has(r.emp_id) ? "" : "new"}"><td>${i + 1}</td><td>${esc(r.name)}</td><td>${esc(r.emp_id)}</td><td>${esc(r.designation)}</td></tr>`).join("")}</tbody></table></div>
+      ${missing.length ? `<label class="check" style="margin-top:var(--s3)"><input type="checkbox" id="rmMissing">
+        Remove the ${missing.length} ${missing.length > 1 ? "people" : "person"} who ${missing.length > 1 ? "are" : "is"} not in this file (their past entries are kept)</label>` : ""}
+    </div>
+    <div class="df"><button class="btn line" id="facBack">Back</button>
+      <button class="btn" id="facSaveAll" ${dup.size || !good.length ? "disabled" : ""}>Save ${good.length} faculty</button></div>`;
+    $("#facSaveAll").onclick = async () => {
+      $("#facSaveAll").disabled = true;
+      try {
+        const j = await post("setFaculty", { rows: good, removeMissing: !!$("#rmMissing")?.checked });
+        toast("Faculty list saved");
+        drawFacultyDialog(j.faculty);
+        await refreshTracker();
+      } catch (e) { toast(e.message, true); $("#facSaveAll").disabled = false; }
+    };
+    $("#facBack").onclick = openFaculty;
+  } catch (e) { toast("Could not read that file: " + e.message, true); }
+}
+
+function downloadTemplate(){
+  if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
+  const ws = XLSX.utils.aoa_to_sheet([["Name","Employee ID","Designation"],["Dr. Example Name","213","Assistant Professor"]]);
+  ws["!cols"] = [{ wch:32 }, { wch:14 }, { wch:26 }];
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Faculty");
+  XLSX.writeFile(wb, "CDOE-faculty-list-template.xlsx");
+}
+
+async function refreshTracker(){ if (state.tab === "tracker") { await loadTracker(); render(); } }
+
+/* ── Excel download ──────────────────────────────────────────── */
+function openDownload(){
+  const days = weekDays(state.date);
+  const d = $("#dlg"); d.className = "";
+  d.innerHTML = `<div class="dh"><div><h3>Download the Day Tracker</h3><p>One row per faculty member per day, with all four slots.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="grid2">
+      <div class="field"><label for="xFrom">From</label><input type="date" id="xFrom" value="${days[0]}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
+      <div class="field"><label for="xTo">To</label><input type="date" id="xTo" value="${days[days.length-1]}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
+    </div>
+    <div class="row" style="margin-bottom:var(--s3)">
+      <button class="btn line sm" data-xr="day">This day</button>
+      <button class="btn line sm" data-xr="week">This week</button>
+      <button class="btn line sm" data-xr="month">This month</button>
+      <button class="btn line sm" data-xr="all">July – December</button>
+    </div>
+    <label class="check"><input type="checkbox" id="xBlank" checked> Include rows for slots nobody filled</label>
+    <p class="bad hint" id="xErr" hidden></p>
+  </div>
+  <div class="df"><button class="btn line" data-close>Cancel</button><button class="btn" id="xGo">Download .xlsx</button></div>`;
+  if (!d.open) d.showModal();
+}
+
+async function doDownload(){
+  const from = $("#xFrom").value, to = $("#xTo").value, blank = $("#xBlank").checked;
+  const err = $("#xErr");
+  if (!from || !to || to < from) { err.hidden = false; err.textContent = "Choose a start date that is on or before the end date."; return; }
+  if (!window.XLSX) { err.hidden = false; err.textContent = "The spreadsheet tool is still loading. Try again in a moment."; return; }
+  $("#xGo").disabled = true;
+  try {
+    const j = await get("range", { from, to });
+    const map = {};
+    j.entries.forEach(e => map[e.day + "|" + e.emp_id + "|" + e.slot] = e.body);
+    const people = j.faculty.filter(f => f.active || j.entries.some(e => e.emp_id === f.emp_id));
+    const head = ["Date","Day","Employee ID","Name","Designation", ...CONFIG.slots.map(s => `${s.name} (${s.from} – ${s.to})`), "Slots filled"];
+    const rows = [head];
+    for (let s = from; s <= to; s = addDays(s, 1)) {
+      if (!isWork(s)) continue;
+      const h = holidayOn(s);
+      people.forEach(f => {
+        const vals = CONFIG.slots.map(sl => map[s + "|" + f.emp_id + "|" + sl.n] || "");
+        const n = vals.filter(Boolean).length;
+        if (!blank && !n) return;
+        rows.push([D(s), DOW[D(s).getDay()] + (h ? " (holiday)" : ""), f.emp_id, f.name, f.designation, ...vals, n]);
+      });
+    }
+    const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates:true, dateNF:"dd-mm-yyyy" });
+    ws["!cols"] = [{ wch:12 }, { wch:18 }, { wch:12 }, { wch:28 }, { wch:22 }, { wch:40 }, { wch:40 }, { wch:40 }, { wch:40 }, { wch:11 }];
+    ws["!autofilter"] = { ref: "A1:J" + rows.length };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Day Tracker");
+    XLSX.writeFile(wb, `CDOE-Day-Tracker_${from}_to_${to}.xlsx`);
+    $("#dlg").close();
+    toast(`Downloaded ${rows.length - 1} rows`);
+  } catch (e) { err.hidden = false; err.textContent = e.message; }
+  finally { const b = $("#xGo"); if (b) b.disabled = false; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ACTIVITY CALENDAR
+   ═══════════════════════════════════════════════════════════════ */
+const proofsOf = id => state.proofs.filter(p => p.event_id === id);
+function visibleEvents(){
+  const needle = state.q.trim().toLowerCase();
+  return state.events.filter(e =>
+    (state.showCancelled || !e.cancelled) &&
+    (state.filter === "all" || e.category === state.filter) &&
+    (!needle || (e.title + " " + e.audience + " " + (TYPES[e.category]?.name || "")).toLowerCase().includes(needle)));
+}
+
+function calBar(){
+  const [y, m] = state.month.split("-").map(Number);
+  const prev = iso(new Date(y, m - 2, 15)).slice(0,7), next = iso(new Date(y, m, 15)).slice(0,7);
+  const prevOk = prev >= CONFIG.from.slice(0,7), nextOk = next <= CONFIG.to.slice(0,7);
+  return `<div class="calhead">
+    ${state.calView === "month" ? `
+      <button class="iconbtn" data-month="${prev}" ${prevOk ? "" : "disabled"} aria-label="Previous month">‹</button>
+      <h2>${MON[m-1]} ${y}</h2>
+      <button class="iconbtn" data-month="${next}" ${nextOk ? "" : "disabled"} aria-label="Next month">›</button>`
+    : `<h2>All activities, July – December 2026</h2>`}
+    <span class="grow"></span>
+    <div class="seg" role="group" aria-label="View">
+      <button data-calview="month" aria-pressed="${state.calView === "month"}">Month</button>
+      <button data-calview="list" aria-pressed="${state.calView === "list"}">List &amp; report</button>
+    </div>
+  </div>
+  <div class="bar">
+    <select id="fType" aria-label="Filter by type">
+      <option value="all">All types</option>
+      ${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${state.filter === k ? "selected" : ""}>${t.name}</option>`).join("")}
+    </select>
+    <input type="search" id="fQ" placeholder="Search activities" value="${esc(state.q)}" style="width:220px" aria-label="Search activities">
+    ${canEdit() ? `<label class="check"><input type="checkbox" id="fCan" ${state.showCancelled ? "checked" : ""}> Show cancelled</label>` : ""}
+    <span class="grow"></span>
+    ${canEdit() ? `<button class="btn" id="addEv">Add activity</button><button class="btn line" id="impEv">Import from Excel</button>` : ""}
+    ${state.calView === "list" ? `<button class="btn line" id="printBtn">Print report</button>` : ""}
+  </div>`;
+}
+
+function drawCalendar(){
+  const v = $("#view");
+  if (state.calError) { v.innerHTML = `<div class="notice">${esc(state.calError)}</div>`; return; }
+  v.innerHTML = calBar() + (state.calView === "list" ? drawList() : drawMonth());
+}
+
+function drawMonth(){
+  const [y, m] = state.month.split("-").map(Number);
+  const first = `${y}-${pad(m)}-01`;
+  const last = iso(new Date(y, m, 0, 12));
+  let s = mondayOf(first);
+  const evs = visibleEvents();
+  const t = todayISO();
+  let html = `<div class="calwrap"><div><div class="month" role="grid" aria-label="${MON[m-1]} ${y}">
+    <div class="mdow" role="row">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(x => `<div role="columnheader">${x}</div>`).join("")}</div>`;
+  while (s <= last) {
+    html += `<div class="mweek" role="row">`;
+    for (let i = 0; i < 7; i++, s = addDays(s, 1)) {
+      const out = s.slice(0,7) !== state.month;
+      const on = evs.filter(e => e.start <= s && e.end >= s);
+      const hol = on.some(e => e.category === "holiday" && !e.cancelled);
+      const cls = ["mday", out ? "out" : "", i === 6 ? "sun" : "", hol && !out ? "hol" : "", s === t ? "today" : ""].filter(Boolean).join(" ");
+      html += `<div class="${cls}" role="gridcell" aria-label="${esc(longDate(s))}"><span class="d">${D(s).getDate()}</span>
+        ${out ? "" : on.map(e => chip(e, s)).join("")}</div>`;
+    }
+    html += `</div>`;
+  }
+  html += `</div>
+    <div class="legend">${Object.entries(TYPES).map(([k, t]) => `<span style="--tone:${tone(k)}"><i></i>${t.name}</span>`).join("")}</div>
+  </div>${drawSide(evs, first, last)}</div>`;
+  return html;
+}
+
+function chip(e, day){
+  const hol = e.category === "holiday" || e.category === "observance";
+  const cont = e.start !== day && D(day).getDay() !== 1;
+  const n = proofsOf(e.id).length;
+  const cls = ["chipb", hol ? "hol" : "", cont ? "cont" : "", e.status === "completed" ? "done" : "", e.cancelled ? "gone" : ""].filter(Boolean).join(" ");
+  return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${esc(e.title + " — " + spanText(e))}">
+    <span class="tx">${cont ? "↳ " : ""}${esc(e.title)}</span>${!hol && n ? `<span class="pf">${n} ${n > 1 ? "files" : "file"}</span>` : ""}</button>`;
+}
+
+function drawSide(evs, first, last){
+  const inMonth = evs.filter(e => e.end >= first && e.start <= last);
+  const acts = inMonth.filter(e => TYPES[e.category]?.activity && !e.cancelled);
+  const hols = inMonth.filter(e => !TYPES[e.category]?.activity);
+  const allActs = state.events.filter(e => TYPES[e.category]?.activity && !e.cancelled);
+  const withProof = allActs.filter(e => proofsOf(e.id).length).length;
+  const done = allActs.filter(e => e.status === "completed").length;
+  const pct = allActs.length ? Math.round(withProof / allActs.length * 100) : 0;
+  const item = e => `<li><button data-ev="${e.id}">
+      <span class="when" style="--tone:${tone(e.category)}">${D(e.start).getDate()}<small>${DOW[D(e.start).getDay()].slice(0,3)}</small></span>
+      <span><span class="t">${esc(e.title)}</span>
+      <span class="k"><span>${esc(TYPES[e.category]?.name || "Activity")}${e.start !== e.end ? " · till " + esc(shortDate(e.end)) : ""}</span>
+      ${TYPES[e.category]?.activity ? (e.status === "completed" ? `<span class="pill ok">Completed</span>` : `<span class="pill">Planned</span>`) : ""}
+      ${TYPES[e.category]?.activity ? (proofsOf(e.id).length ? `<span class="pill ok">${proofsOf(e.id).length} proof</span>` : `<span class="pill red">No proof</span>`) : ""}</span></span>
+    </button></li>`;
+  return `<aside class="side">
+    <section class="progress">
+      <div class="big">${withProof}<span> of ${allActs.length}</span></div>
+      <div class="track"><i style="width:${pct}%"></i></div>
+      <div class="hint">activities from July to December have proof attached. ${done} marked completed.</div>
+    </section>
+    <section><h3>Activities this month <span class="count">${acts.length}</span></h3>
+      ${acts.length ? `<ul class="alist">${acts.map(item).join("")}</ul>` : `<p class="hint">No activities planned for this month yet.${canEdit() ? " Use Add activity to put one on the calendar." : ""}</p>`}
+    </section>
+    ${hols.length ? `<section><h3>Holidays and exams <span class="count">${hols.length}</span></h3><ul class="alist">${hols.map(item).join("")}</ul></section>` : ""}
+  </aside>`;
+}
+
+function drawList(){
+  const evs = visibleEvents();
+  if (!evs.length) return `<div class="empty"><h3>Nothing matches</h3><p>Clear the search or choose All types.</p></div>`;
+  let mon = "", rows = "";
+  evs.forEach(e => {
+    const k = e.start.slice(0,7);
+    if (k !== mon) { mon = k; rows += `<tr class="mon"><td colspan="6">${MON[D(e.start).getMonth()]} ${D(e.start).getFullYear()}</td></tr>`; }
+    const act = TYPES[e.category]?.activity, pf = proofsOf(e.id);
+    rows += `<tr class="ev" data-ev="${e.id}">
+      <td class="nowrap">${esc(e.start === e.end ? shortDate(e.start) : shortDate(e.start) + " – " + shortDate(e.end))}</td>
+      <td><b>${esc(e.title)}</b>${e.cancelled ? ` <span class="pill red">Cancelled</span>` : ""}${e.notes ? `<div class="hint">${esc(e.notes.slice(0, 160))}${e.notes.length > 160 ? "…" : ""}</div>` : ""}</td>
+      <td><span class="typ" style="--tone:${tone(e.category)}"><i></i>${esc(TYPES[e.category]?.name || "Activity")}</span></td>
+      <td>${esc(e.audience)}</td>
+      <td>${act ? (e.status === "completed" ? `<span class="pill ok">Completed</span>` : `<span class="pill">Planned</span>`) : ""}</td>
+      <td class="links">${act ? (pf.length ? pf.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.label)}</a>`).join("") : `<span class="hint">None yet</span>`) : ""}</td>
+    </tr>`;
+  });
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE activity report, July – December 2026</h2>
+      <p>Printed ${esc(longDate(todayISO()))}. Each activity with its status and proof links.</p></div>
+    <div class="rtable"><table><thead><tr><th>Date</th><th>Activity</th><th>Type</th><th>For</th><th>Status</th><th>Proof</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ── Activity dialog ─────────────────────────────────────────── */
+function openEvent(id){
+  const e = state.events.find(x => x.id === id); if (!e) return;
+  const d = $("#dlg"); d.className = "";
+  const act = TYPES[e.category]?.activity, ed = canEdit(), pf = proofsOf(id);
+  const days = Math.round((D(e.end) - D(e.start)) / 864e5) + 1;
+  d.innerHTML = `<div class="dh" style="border-top-color:${tone(e.category)}"><div>
+      <h3>${esc(e.title)}</h3>
+      <div class="facts"><span class="tone" style="--tone:${tone(e.category)}">${esc(TYPES[e.category]?.name || "Activity")}</span>
+        <span>${esc(spanText(e))}</span>${days > 1 ? `<span>${days} days</span>` : ""}
+        ${e.audience ? `<span>For ${esc(e.audience)}</span>` : ""}
+        ${e.cancelled ? `<span class="tone" style="--tone:var(--red)">Cancelled</span>` : ""}</div>
+    </div><button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    ${act ? `<div class="row" style="margin-bottom:var(--s4)">
+        <span class="hint">Status</span>
+        <div class="seg" role="group" aria-label="Status">
+          <button data-status="planned" aria-pressed="${e.status !== "completed"}" ${ed ? "" : "disabled"}>Planned</button>
+          <button data-status="completed" aria-pressed="${e.status === "completed"}" ${ed ? "" : "disabled"}>Completed</button>
+        </div></div>
+      <div class="sec"><h4>Proof of conduct</h4>
+        ${pf.length ? `<ul class="proofs">${pf.map(p => `<li><div><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.label)}</a>
+            <small>Added ${esc(p.added)}${p.by ? " by " + esc(p.by) : ""}</small></div>
+            ${ed ? `<button class="btn plain sm" data-rmproof="${p.id}">Remove</button>` : ""}</li>`).join("")}</ul>`
+          : `<p class="hint">No proof attached yet.${ed ? " Add the photographs, attendance sheet and report links." : ""}</p>`}
+        ${ed ? `<div class="grid2" style="grid-template-columns:1fr 1.6fr;align-items:end">
+            <div class="field"><label for="pLbl">What the link holds</label><input id="pLbl" type="text" list="pKinds" placeholder="Photographs">
+              <datalist id="pKinds">${PROOF_KINDS.map(k => `<option value="${k}">`).join("")}</datalist></div>
+            <div class="field"><label for="pUrl">Google Drive link</label><input id="pUrl" type="url" inputmode="url" placeholder="https://drive.google.com/…"></div>
+          </div>
+          <div class="row"><button class="btn" id="pAdd">Attach link</button><span class="hint">Set the file to "Anyone with the link can view" first.</span></div>` : ""}
+      </div>
+      <div class="sec"><h4>Notes</h4>
+        ${ed ? `<div class="field"><label for="evNotes" class="sr">Notes</label>
+          <textarea id="evNotes" rows="4" placeholder="Resource person, platform or venue, number of participants, outcome">${esc(e.notes)}</textarea></div>
+          <button class="btn line sm" id="notesSave">Save notes</button>`
+        : (e.notes ? `<p style="white-space:pre-wrap;margin:0">${esc(e.notes)}</p>` : `<p class="hint">No notes yet.</p>`)}
+      </div>` : `<p class="hint" style="margin-top:0">${e.category === "holiday" ? "The Day Tracker marks this day as a holiday. Slot entries are optional." : "Shown on the calendar for reference."}</p>`}
+    ${e.by ? `<p class="hint" style="margin-top:var(--s4)">Last changed by ${esc(e.by)}.</p>` : ""}
+  </div>
+  ${ed ? `<div class="df" style="justify-content:space-between">
+      ${e.cancelled ? `<button class="btn line" id="evRestore">Restore activity</button>` : `<button class="btn plain" id="evCancel">Cancel this activity</button>`}
+      <button class="btn line" id="evEdit">Edit details</button></div>` : ""}`;
+  d.dataset.ev = id;
+  if (!d.open) d.showModal();
+}
+
+function openEventForm(id){
+  const e = id ? state.events.find(x => x.id === id) : null;
+  const start = e ? e.start : (todayISO().slice(0,7) === state.month ? todayISO() : state.month + "-01");
+  const d = $("#dlg"); d.className = "";
+  d.innerHTML = `<div class="dh"><div><h3>${e ? "Edit activity" : "Add activity"}</h3><p>${e ? "Changes show on the calendar straight away." : "It appears on the calendar for everyone."}</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="field"><label for="eTitle">Title</label><input id="eTitle" type="text" value="${esc(e ? e.title : "")}" placeholder="Webinar on …"></div>
+    <div class="grid2">
+      <div class="field"><label for="eFrom">From</label><input id="eFrom" type="date" value="${start}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
+      <div class="field"><label for="eTo">To</label><input id="eTo" type="date" value="${e ? e.end : start}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="eType">Type</label><select id="eType">${Object.entries(TYPES).map(([k, t]) =>
+        `<option value="${k}" ${(e ? e.category : "webinar") === k ? "selected" : ""}>${t.name}</option>`).join("")}</select></div>
+      <div class="field"><label for="eAud">For (programme or audience)</label><input id="eAud" type="text" value="${esc(e ? e.audience : "")}" placeholder="Online MBA, all learners"></div>
+    </div>
+    <p class="hint bad" id="eErr" hidden></p>
+  </div>
+  <div class="df"><button class="btn line" ${e ? `data-back="${e.id}"` : "data-close"}>Cancel</button><button class="btn" id="eSave">${e ? "Save changes" : "Add activity"}</button></div>`;
+  d.dataset.edit = id || "";
+  if (!d.open) d.showModal();
+  setTimeout(() => $("#eTitle").focus(), 30);
+}
+
+async function saveEventForm(){
+  const id = $("#dlg").dataset.edit || null;
+  const body = { id, title: $("#eTitle").value, start: $("#eFrom").value, end: $("#eTo").value || $("#eFrom").value,
+    category: $("#eType").value, audience: $("#eAud").value };
+  const err = $("#eErr");
+  if (!body.title.trim()) { err.hidden = false; err.textContent = "Give the activity a title."; return; }
+  if (!body.start) { err.hidden = false; err.textContent = "Choose the start date."; return; }
+  if (body.end < body.start) { err.hidden = false; err.textContent = "The end date is before the start date."; return; }
+  $("#eSave").disabled = true;
+  try {
+    const j = await post("saveEvent", body); applyCalendar(j);
+    toast(id ? "Activity updated" : "Activity added");
+    if (!id) { state.month = body.start.slice(0,7); history.replaceState(null, "", calHash()); }
+    render();
+    if (id) openEvent(id); else $("#dlg").close();
+  } catch (e) { err.hidden = false; err.textContent = e.message; $("#eSave").disabled = false; }
+}
+
+async function evAction(action, payload, msg){
+  try { const j = await post(action, payload); applyCalendar(j); render(); if (msg) toast(msg); return true; }
+  catch (e) { toast(e.message, true); return false; }
+}
+
+/* ── Import activities from Excel ────────────────────────────── */
+function parseDateCell(v){
+  if (v instanceof Date && !isNaN(v)) return iso(new Date(v.getFullYear(), v.getMonth(), v.getDate(), 12));
+  if (typeof v === "number" && window.XLSX) { const p = XLSX.SSF.parse_date_code(v); if (p) return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
+  const s = String(v ?? "").trim(); if (!s) return null;
+  let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  m = s.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})/);
+  if (m) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return `${y}-${pad(m[2])}-${pad(m[1])}`; }
+  m = s.match(/^(\d{1,2})[\s-]+([A-Za-z]{3,})[\s,-]+(\d{4})/);
+  if (m) { const k = MON.findIndex(x => x.toLowerCase().startsWith(m[2].slice(0,3).toLowerCase())); if (k >= 0) return `${m[3]}-${pad(k+1)}-${pad(m[1])}`; }
+  return null;
+}
+function guessType(s){
+  s = String(s || "").toLowerCase();
+  const pairs = [["holiday","holiday"],["observ","observance"],["exam","exam"],["assess","exam"],["admission","admission"],
+    ["orient","orientation"],["induct","orientation"],["counsel","counselling"],["live","counselling"],["pcp","counselling"],
+    ["webinar","webinar"],["workshop","workshop"],["fdp","fdp"],["training","fdp"],["sttp","fdp"],["meeting","meeting"],
+    ["review","meeting"],["content","content"],["recording","content"]];
+  for (const [k, v] of pairs) if (s.includes(k)) return v;
+  return "event";
+}
+function openImport(){
+  const d = $("#dlg"); d.className = "wide";
+  d.innerHTML = `<div class="dh"><div><h3>Import activities from Excel</h3><p>Adds every row to the calendar. Nothing already on the calendar is changed.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db"><div class="drop"><b>Choose an Excel or CSV file</b>
+    <p>Columns: Start date, End date, Title, Type, For. End date, Type and For can be left empty. Dates like 15-08-2026 or 2026-08-15 both work.</p>
+    <label class="btn">Choose file<input type="file" id="evFile" accept=".xlsx,.xls,.csv" hidden></label></div></div>`;
+  if (!d.open) d.showModal();
+}
+async function handleEventFile(file){
+  try {
+    const rows = await readSheet(file);
+    const h = pickHeader(rows, { start:/start|^from|^date/, end:/end|^to$|till/, title:/title|activity|event|name|particular|program/, type:/type|category|kind/, aud:/for|audience|class|batch/ });
+    if (!h || h.idx.start === undefined || h.idx.title === undefined) throw new Error("Could not find the Start date and Title columns. Put headings in the first row.");
+    const out = [], skipped = [];
+    for (let r = h.row + 1; r < rows.length; r++) {
+      const row = rows[r] || []; const title = String(row[h.idx.title] ?? "").trim();
+      if (!title && !row[h.idx.start]) continue;
+      const start = parseDateCell(row[h.idx.start]);
+      const end = h.idx.end !== undefined ? (parseDateCell(row[h.idx.end]) || start) : start;
+      if (!title || !start || end < start) { skipped.push(r + 1); continue; }
+      out.push({ start, end, title, category: guessType(h.idx.type !== undefined ? row[h.idx.type] : title),
+        audience: h.idx.aud !== undefined ? String(row[h.idx.aud] ?? "").trim() : "" });
+    }
+    const d = $("#dlg");
+    d.innerHTML = `<div class="dh"><div><h3>Check before adding</h3><p>${esc(file.name)}: ${out.length} activities ready.</p></div>
+      <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+    <div class="db">
+      ${skipped.length ? `<div class="notice">Rows ${esc(skipped.slice(0,12).join(", "))}${skipped.length > 12 ? "…" : ""} have no title or no readable date and will be skipped.</div>` : ""}
+      <div class="ftable"><table><thead><tr><th>From</th><th>To</th><th>Title</th><th>Type</th><th>For</th></tr></thead>
+      <tbody>${out.map((r, i) => `<tr><td class="nowrap">${esc(shortDate(r.start))}</td><td class="nowrap">${esc(shortDate(r.end))}</td><td>${esc(r.title)}</td>
+        <td><select data-imp="${i}" aria-label="Type">${Object.entries(TYPES).map(([k, t]) => `<option value="${k}" ${r.category === k ? "selected" : ""}>${t.name}</option>`).join("")}</select></td>
+        <td>${esc(r.audience)}</td></tr>`).join("")}</tbody></table></div>
+    </div>
+    <div class="df"><button class="btn line" id="impBack">Back</button><button class="btn" id="impGo" ${out.length ? "" : "disabled"}>Add ${out.length} activities</button></div>`;
+    $$("[data-imp]", d).forEach(s => s.onchange = () => out[Number(s.dataset.imp)].category = s.value);
+    $("#impBack").onclick = openImport;
+    $("#impGo").onclick = async () => {
+      $("#impGo").disabled = true;
+      if (await evAction("importEvents", { rows: out }, `Added ${out.length} activities`)) d.close();
+      else $("#impGo").disabled = false;
+    };
+  } catch (e) { toast("Could not read that file: " + e.message, true); }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Events (one delegated listener)
+   ═══════════════════════════════════════════════════════════════ */
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("button, a, [data-ev]");
+  if (!t) return;
+
+  if (t.matches("[data-close]")) { t.closest("dialog").close(); return; }
+  if (t.id === "inBtn" || t.id === "signBtn2") { openSignIn(); return; }
+  if (t.id === "signLink") { ev.preventDefault(); openSignIn(); return; }
+  if (t.id === "outBtn") { await flushAll(); signOut(); return; }
+  if (t.id === "sGo") { doSignIn(); return; }
+  if (t.dataset.tab) {
+    go(t.dataset.tab === "tracker" ? trackerHash(state.date || todayISO(), "day") : calHash(state.month || todayISO().slice(0,7), state.calView));
+    return;
+  }
+
+  /* tracker */
+  if (t.dataset.day) { go(trackerHash(t.dataset.day, "day")); return; }
+  if (t.dataset.go) { go(trackerHash(clampDay(t.dataset.go), state.trView)); return; }
+  if (t.dataset.trview) { go(trackerHash(state.date, t.dataset.trview)); return; }
+  if (t.dataset.openday) { go(trackerHash(t.dataset.openday, "day")); return; }
+  if (t.id === "todayBtn") { go(trackerHash(clampDay(todayISO()), "day")); return; }
+  if (t.id === "facBtn" || t.id === "facBtn2") { openFaculty(); return; }
+  if (t.id === "xlBtn") { openDownload(); return; }
+  if (t.id === "xGo") { doDownload(); return; }
+  if (t.dataset.xr) {
+    const r = t.dataset.xr, w = weekDays(state.date);
+    let f = state.date, to = state.date;
+    if (r === "week") { f = w[0]; to = w[w.length-1]; }
+    if (r === "month") { f = state.date.slice(0,7) + "-01"; const [y, m] = f.split("-").map(Number); to = iso(new Date(y, m, 0, 12)); }
+    if (r === "all") { f = CONFIG.from; to = CONFIG.to; }
+    $("#xFrom").value = f < CONFIG.from ? CONFIG.from : f; $("#xTo").value = to > CONFIG.to ? CONFIG.to : to; return;
+  }
+  if (t.id === "tplBtn") { downloadTemplate(); return; }
+  if (t.id === "nfAdd") {
+    const name = $("#nfName").value.trim(), emp_id = $("#nfId").value.trim(), designation = $("#nfDes").value.trim();
+    if (!name || !emp_id) { toast("Enter the name and the Employee ID", true); return; }
+    try { const j = await post("saveFaculty", { name, emp_id, designation, isNew:true }); drawFacultyDialog(j.faculty); toast(name + " added"); refreshTracker(); }
+    catch (e) { toast(e.message, true); }
+    return;
+  }
+  if (t.matches("[data-facsave],[data-facdel],[data-facback]")) {
+    const tr = t.closest("tr"), emp_id = tr.dataset.emp;
+    try {
+      let j;
+      if (t.matches("[data-facsave]")) {
+        j = await post("saveFaculty", { emp_id, name: $('[data-f="name"]', tr).value, designation: $('[data-f="designation"]', tr).value });
+        toast("Saved");
+      } else if (t.matches("[data-facdel]")) {
+        if (!confirm("Remove this person from the Day Tracker? Their past entries are kept.")) return;
+        j = await post("removeFaculty", { emp_id }); toast("Removed");
+      } else { j = await post("restoreFaculty", { emp_id }); toast("Restored"); }
+      drawFacultyDialog(j.faculty); refreshTracker();
+    } catch (e) { toast(e.message, true); }
+    return;
+  }
+
+  /* calendar */
+  if (t.dataset.month) { go(calHash(t.dataset.month, "month")); return; }
+  if (t.dataset.calview) { go(calHash(state.month, t.dataset.calview)); return; }
+  if (t.id === "printBtn") { window.print(); return; }
+  if (t.id === "addEv") { openEventForm(null); return; }
+  if (t.id === "impEv") { openImport(); return; }
+  if (t.dataset.ev) { openEvent(t.dataset.ev); return; }
+  if (t.dataset.back) { openEvent(t.dataset.back); return; }
+  if (t.id === "eSave") { saveEventForm(); return; }
+  const evId = $("#dlg").dataset.ev;
+  if (t.dataset.status) {
+    if (await evAction("setStatus", { id: evId, status: t.dataset.status }, t.dataset.status === "completed" ? "Marked completed" : "Marked planned")) openEvent(evId);
+    return;
+  }
+  if (t.id === "pAdd") {
+    const url = $("#pUrl").value.trim(), label = $("#pLbl").value.trim() || "Supporting document";
+    if (!/^https?:\/\//i.test(url)) { toast("Paste the full link, starting with https://", true); return; }
+    if (await evAction("addProof", { id: evId, url, label }, "Link attached")) openEvent(evId);
+    return;
+  }
+  if (t.dataset.rmproof) {
+    if (!confirm("Remove this link?")) return;
+    if (await evAction("removeProof", { proof_id: t.dataset.rmproof }, "Link removed")) openEvent(evId);
+    return;
+  }
+  if (t.id === "notesSave") { if (await evAction("setNotes", { id: evId, notes: $("#evNotes").value }, "Notes saved")) openEvent(evId); return; }
+  if (t.id === "evEdit") { openEventForm(evId); return; }
+  if (t.id === "evCancel") {
+    if (!confirm("Cancel this activity? It disappears from the calendar. Its proof links are kept and come back if you restore it.")) return;
+    if (await evAction("cancelEvent", { id: evId }, "Activity cancelled")) $("#dlg").close();
+    return;
+  }
+  if (t.id === "evRestore") { if (await evAction("restoreEvent", { id: evId }, "Activity restored")) openEvent(evId); return; }
+});
+
+document.addEventListener("input", ev => {
+  const t = ev.target;
+  if (t.matches(".scell textarea") && canEdit()) { queueSave(t, false); return; }
+  if (t.id === "findFac") {
+    state.findFac = t.value;
+    clearTimeout(state._ff); state._ff = setTimeout(async () => { await flushAll(); render(); const f = $("#findFac"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
+    return;
+  }
+  if (t.id === "fQ") {
+    state.q = t.value;
+    clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
+  }
+});
+document.addEventListener("focusout", ev => {
+  const t = ev.target;
+  if (t.matches(".scell textarea") && canEdit()) {
+    const row = t.closest(".frow");
+    const k = keyOf(state.date, row.dataset.emp, Number(t.dataset.slot));
+    if (pending.has(k)) saveOne(k);
+  }
+});
+document.addEventListener("change", async ev => {
+  const t = ev.target;
+  if (t.id === "pickDay" && t.value) { go(trackerHash(clampDay(t.value), state.trView)); return; }
+  if (t.id === "onlyOpen") { state.onlyOpen = t.checked; await flushAll(); render(); return; }
+  if (t.id === "fType") { state.filter = t.value; render(); return; }
+  if (t.id === "fCan") { state.showCancelled = t.checked; render(); return; }
+  if (t.id === "facFile" && t.files[0]) { handleFacultyFile(t.files[0]); return; }
+  if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
+});
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); }
+});
+window.addEventListener("hashchange", route);
+
+/* ═══════════════════════════════════════════════════════════════
+   Start
+   ═══════════════════════════════════════════════════════════════ */
+(async function start(){
+  $("#bandDate").innerHTML = `Today is <b>${esc(longDate(todayISO()))}</b>`;
+  drawWho();
+  if (state.session) {
+    fetch("/api/save", { method:"POST", headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ action:"check", token: state.session.token }) })
+      .then(r => { if (r.status === 401) signOut(true); }).catch(() => {});
+  }
+  try { applyCalendar(await get("calendar")); state.calError = null; }
+  catch (e) { state.calError = e.message; }
+  await route();
+})();
+</script>
+</body>
+</html>

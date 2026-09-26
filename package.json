@@ -1,0 +1,17 @@
+{
+  "name": "cdoe-workboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CDOE Workboard — Department Activity Calendar and Day Tracker, Vignan's Online (CDOE)",
+  "scripts": {
+    "dev": "node dev/server.mjs"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
+}
