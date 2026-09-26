@@ -135,4 +135,6 @@ api/save.js       POST /api/save   — every change
 public/index.html the whole site
 public/logo.jpg   the Vignan's Online logo
 dev/server.mjs    local preview only (not used on Vercel)
+
+Deployed for CDOE
 ```
