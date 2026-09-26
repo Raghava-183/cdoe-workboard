@@ -7,12 +7,23 @@
 
 let _sql = null;
 
+function dbUrl() {
+  const env = process.env;
+  if (env.DATABASE_URL) return env.DATABASE_URL;
+  if (env.POSTGRES_URL) return env.POSTGRES_URL;
+  const key = Object.keys(env).sort().find(k =>
+    /_URL$/.test(k) && !/UNPOOLED|NON_POOLING|PRISMA/.test(k) &&
+    /^postgres(ql)?:\/\//.test(env[k] || ''));
+  return key ? env[key] : '';
+}
+
 async function getSql() {
   if (_sql) return _sql;
 
-  if (process.env.DATABASE_URL) {
+  const url = dbUrl();
+  if (url) {
     const { neon } = await import('@neondatabase/serverless');
-    _sql = neon(process.env.DATABASE_URL);
+    _sql = neon(url);
   } else if (process.env.LOCAL_DB) {
     const { PGlite } = await import('@electric-sql/pglite');
     const db = new PGlite(process.env.LOCAL_DB);
