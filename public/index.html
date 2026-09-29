@@ -34,9 +34,10 @@
   --maxw:1440px;
 
   /* activity types */
-  --t-holiday:#E3231B; --t-observance:#8E8483; --t-exam:#6D3FA3; --t-admission:#0F7B8A;
-  --t-orientation:#C8710A; --t-counselling:#3A7D2C; --t-webinar:#2F5FC4; --t-workshop:#8A1538;
-  --t-fdp:#B0448F; --t-meeting:#4A5568; --t-content:#7A5A1E; --t-event:#1D4E6E;
+  --t-holiday:#E3231B; --t-observance:#9E9494; --t-semester:#0D47A1; --t-assessment:#00897B;
+  --t-techtalk:#EF6C00; --t-webinar:#1E88E5; --t-exam:#6A1B9A; --t-admission:#2E7D32;
+  --t-orientation:#D49B00; --t-counselling:#7CB342; --t-workshop:#8A1538; --t-fdp:#AD1457;
+  --t-meeting:#546E7A; --t-content:#8D6E63; --t-event:#3949AB;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -376,7 +377,7 @@ footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);displ
 
 <nav class="band" aria-label="Sections">
   <div class="band-in" role="tablist">
-    <button class="tab" role="tab" id="tab-calendar" data-tab="calendar" aria-selected="false">Activity Calendar<small>Department events, July – December 2026</small></button>
+    <button class="tab" role="tab" id="tab-calendar" data-tab="calendar" aria-selected="false">Activity Calendar<small>Department events, January – December 2026</small></button>
     <button class="tab" role="tab" id="tab-tracker" data-tab="tracker" aria-selected="false">Day Tracker<small>Four slots for every faculty member, every working day</small></button>
     <span class="band-date" id="bandDate"></span>
   </div>
@@ -417,8 +418,10 @@ footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);displ
    SETTINGS — change these and push to GitHub; Vercel redeploys.
    ═══════════════════════════════════════════════════════════════ */
 const CONFIG = {
-  from: "2026-07-01",          // first day the site covers
-  to:   "2026-12-31",          // last day the site covers
+  from: "2026-07-01",          // Day Tracker: first day
+  to:   "2026-12-31",          // Day Tracker: last day
+  calFrom: "2026-01-01",       // Activity Calendar: first day
+  calTo:   "2026-12-31",       // Activity Calendar: last day
   workDays: [1,2,3,4,5,6],     // Monday to Saturday (0 = Sunday)
   slots: [
     { n:1, name:"Slot 1", from:"8:15 AM",  to:"10:00 AM" },
@@ -429,6 +432,9 @@ const CONFIG = {
 };
 
 const TYPES = {
+  semester:    { name:"Semester commencement / end", activity:false },
+  assessment:  { name:"Continuous assessment",   activity:false },
+  techtalk:    { name:"Tech Talks",              activity:true  },
   webinar:     { name:"Webinar",                 activity:true  },
   workshop:    { name:"Workshop",                activity:true  },
   fdp:         { name:"FDP / training",          activity:true  },
@@ -583,8 +589,8 @@ function readHash(){
   } else {
     const def = todayISO().slice(0,7);
     let m = /^\d{4}-\d{2}$/.test(arg || "") ? arg : def;
-    if (m < CONFIG.from.slice(0,7)) m = CONFIG.from.slice(0,7);
-    if (m > CONFIG.to.slice(0,7)) m = CONFIG.to.slice(0,7);
+    if (m < CONFIG.calFrom.slice(0,7)) m = CONFIG.calFrom.slice(0,7);
+    if (m > CONFIG.calTo.slice(0,7)) m = CONFIG.calTo.slice(0,7);
     state.month = m;
     state.calView = extra === "list" ? "list" : "month";
   }
@@ -1054,13 +1060,13 @@ function visibleEvents(){
 function calBar(){
   const [y, m] = state.month.split("-").map(Number);
   const prev = iso(new Date(y, m - 2, 15)).slice(0,7), next = iso(new Date(y, m, 15)).slice(0,7);
-  const prevOk = prev >= CONFIG.from.slice(0,7), nextOk = next <= CONFIG.to.slice(0,7);
+  const prevOk = prev >= CONFIG.calFrom.slice(0,7), nextOk = next <= CONFIG.calTo.slice(0,7);
   return `<div class="calhead">
     ${state.calView === "month" ? `
       <button class="iconbtn" data-month="${prev}" ${prevOk ? "" : "disabled"} aria-label="Previous month">‹</button>
       <h2>${MON[m-1]} ${y}</h2>
       <button class="iconbtn" data-month="${next}" ${nextOk ? "" : "disabled"} aria-label="Next month">›</button>`
-    : `<h2>All activities, July – December 2026</h2>`}
+    : `<h2>All activities, 2026</h2>`}
     <span class="grow"></span>
     <div class="seg" role="group" aria-label="View">
       <button data-calview="month" aria-pressed="${state.calView === "month"}">Month</button>
@@ -1141,12 +1147,12 @@ function drawSide(evs, first, last){
     <section class="progress">
       <div class="big">${withProof}<span> of ${allActs.length}</span></div>
       <div class="track"><i style="width:${pct}%"></i></div>
-      <div class="hint">activities from July to December have proof attached. ${done} marked completed.</div>
+      <div class="hint">activities in 2026 have proof attached. ${done} marked completed.</div>
     </section>
     <section><h3>Activities this month <span class="count">${acts.length}</span></h3>
       ${acts.length ? `<ul class="alist">${acts.map(item).join("")}</ul>` : `<p class="hint">No activities planned for this month yet.${canEdit() ? " Use Add activity to put one on the calendar." : ""}</p>`}
     </section>
-    ${hols.length ? `<section><h3>Holidays and exams <span class="count">${hols.length}</span></h3><ul class="alist">${hols.map(item).join("")}</ul></section>` : ""}
+    ${hols.length ? `<section><h3>Holidays and academic dates <span class="count">${hols.length}</span></h3><ul class="alist">${hols.map(item).join("")}</ul></section>` : ""}
   </aside>`;
 }
 
@@ -1167,7 +1173,7 @@ function drawList(){
       <td class="links">${act ? (pf.length ? pf.map(p => `<a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.label)}</a>`).join("") : `<span class="hint">None yet</span>`) : ""}</td>
     </tr>`;
   });
-  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE activity report, July – December 2026</h2>
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE activity report, January – December 2026</h2>
       <p>Printed ${esc(longDate(todayISO()))}. Each activity with its status and proof links.</p></div>
     <div class="rtable"><table><thead><tr><th>Date</th><th>Activity</th><th>Type</th><th>For</th><th>Status</th><th>Proof</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -1229,8 +1235,8 @@ function openEventForm(id){
   <div class="db">
     <div class="field"><label for="eTitle">Title</label><input id="eTitle" type="text" value="${esc(e ? e.title : "")}" placeholder="Webinar on …"></div>
     <div class="grid2">
-      <div class="field"><label for="eFrom">From</label><input id="eFrom" type="date" value="${start}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
-      <div class="field"><label for="eTo">To</label><input id="eTo" type="date" value="${e ? e.end : start}" min="${CONFIG.from}" max="${CONFIG.to}"></div>
+      <div class="field"><label for="eFrom">From</label><input id="eFrom" type="date" value="${start}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
+      <div class="field"><label for="eTo">To</label><input id="eTo" type="date" value="${e ? e.end : start}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
     </div>
     <div class="grid2">
       <div class="field"><label for="eType">Type</label><select id="eType">${Object.entries(TYPES).map(([k, t]) =>
@@ -1281,8 +1287,10 @@ function parseDateCell(v){
   return null;
 }
 function guessType(s){
-  s = String(s || "").toLowerCase();
-  const pairs = [["holiday","holiday"],["observ","observance"],["exam","exam"],["assess","exam"],["admission","admission"],
+  s = String(s || "").trim().toLowerCase();
+  for (const [k, t] of Object.entries(TYPES)) if (s === k || s === t.name.toLowerCase()) return k;
+  const pairs = [["continuous","assessment"],["semester commence","semester"],["end semester","semester"],
+    ["tech talk","techtalk"],["holiday","holiday"],["observ","observance"],["exam","exam"],["assess","exam"],["admission","admission"],
     ["orient","orientation"],["induct","orientation"],["counsel","counselling"],["live","counselling"],["pcp","counselling"],
     ["webinar","webinar"],["workshop","workshop"],["fdp","fdp"],["training","fdp"],["sttp","fdp"],["meeting","meeting"],
     ["review","meeting"],["content","content"],["recording","content"]];
@@ -1328,8 +1336,11 @@ async function handleEventFile(file){
     $("#impBack").onclick = openImport;
     $("#impGo").onclick = async () => {
       $("#impGo").disabled = true;
-      if (await evAction("importEvents", { rows: out }, `Added ${out.length} activities`)) d.close();
-      else $("#impGo").disabled = false;
+      try {
+        const j = await post("importEvents", { rows: out });
+        applyCalendar(j); render(); d.close();
+        toast(`Added ${j.added} activities` + (j.skipped ? `. ${j.skipped} were already on the calendar and were skipped.` : ""));
+      } catch (e) { toast(e.message, true); $("#impGo").disabled = false; }
     };
   } catch (e) { toast("Could not read that file: " + e.message, true); }
 }

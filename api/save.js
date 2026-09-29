@@ -1,8 +1,8 @@
 import { q, ensure, readCalendar, readFaculty, readBody } from './_db.js';
 import { login, verify } from './_auth.js';
 
-const CATS = ['holiday', 'observance', 'exam', 'admission', 'orientation', 'counselling',
-  'webinar', 'workshop', 'fdp', 'meeting', 'content', 'event'];
+const CATS = ['holiday', 'observance', 'semester', 'assessment', 'techtalk', 'exam', 'admission',
+  'orientation', 'counselling', 'webinar', 'workshop', 'fdp', 'meeting', 'content', 'event'];
 const isDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 const txt = (v, n) => String(v ?? '').trim().slice(0, n);
 
@@ -121,13 +121,20 @@ async function run(b, who) {
     case 'importEvents': {
       const rows = (Array.isArray(b.rows) ? b.rows : []).map(cleanEvent);
       if (!rows.length) throw new Bad('No activities to add');
-      await q`
+      // Rows already on the calendar (same dates, same title) are skipped,
+      // so uploading the same file twice does not create copies.
+      const added = await q`
         INSERT INTO events (start_date, end_date, category, title, audience, updated_by)
-        SELECT s::date, e::date, c, t, a, ${who}
+        SELECT DISTINCT ON (s, e, lower(t)) s::date, e::date, c, t, a, ${who}
         FROM unnest(${rows.map(r => r.start)}::text[], ${rows.map(r => r.end)}::text[],
                     ${rows.map(r => r.category)}::text[], ${rows.map(r => r.title)}::text[],
-                    ${rows.map(r => r.audience)}::text[]) AS x(s, e, c, t, a)`;
-      return readCalendar();
+                    ${rows.map(r => r.audience)}::text[]) AS x(s, e, c, t, a)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM events ev
+          WHERE ev.start_date = x.s::date AND ev.end_date = x.e::date AND lower(ev.title) = lower(x.t))
+        ORDER BY s, e, lower(t)
+        RETURNING id`;
+      return Object.assign({ added: added.length, skipped: rows.length - added.length }, await readCalendar());
     }
 
     case 'setStatus': {
