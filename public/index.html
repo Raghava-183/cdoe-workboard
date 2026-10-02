@@ -468,6 +468,9 @@ const addDays = (s, n) => { const d = D(s); d.setDate(d.getDate()+n); return iso
 const DOW = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 const MON = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const todayISO = () => iso(new Date());
+/* An Excel date cell built from the day number itself, so no time zone can shift it. */
+const excelDay = s => { const [y, m, d] = s.split("-").map(Number);
+  return { t:"n", v: (Date.UTC(y, m - 1, d) - Date.UTC(1899, 11, 30)) / 864e5, z:"dd-mm-yyyy" }; };
 const longDate = s => { const d = D(s); return DOW[d.getDay()] + ", " + d.getDate() + " " + MON[d.getMonth()] + " " + d.getFullYear(); };
 const shortDate = s => { const d = D(s); return d.getDate() + " " + MON[d.getMonth()].slice(0,3); };
 const tone = cat => `var(--t-${TYPES[cat] ? cat : "event"})`;
@@ -921,7 +924,9 @@ function pickHeader(rows, tests){
 async function readSheet(file){
   if (!window.XLSX) throw new Error("The spreadsheet reader has not loaded yet. Wait a moment and try again.");
   const buf = await file.arrayBuffer();
-  const wb = XLSX.read(buf, { type:"array", cellDates:true });
+  // Dates are read as Excel day numbers, not JavaScript dates. JavaScript dates
+  // shift by one day in Indian time (UTC+5:30) when the spreadsheet library reads them.
+  const wb = XLSX.read(buf, { type:"array", cellDates:false });
   const ws = wb.Sheets[wb.SheetNames[0]];
   return XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:"" });
 }
@@ -1034,10 +1039,10 @@ async function doDownload(){
         const vals = CONFIG.slots.map(sl => map[s + "|" + f.emp_id + "|" + sl.n] || "");
         const n = vals.filter(Boolean).length;
         if (!blank && !n) return;
-        rows.push([D(s), DOW[D(s).getDay()] + (h ? " (holiday)" : ""), f.emp_id, f.name, f.designation, ...vals, n]);
+        rows.push([excelDay(s), DOW[D(s).getDay()] + (h ? " (holiday)" : ""), f.emp_id, f.name, f.designation, ...vals, n]);
       });
     }
-    const ws = XLSX.utils.aoa_to_sheet(rows, { cellDates:true, dateNF:"dd-mm-yyyy" });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
     ws["!cols"] = [{ wch:12 }, { wch:18 }, { wch:12 }, { wch:28 }, { wch:22 }, { wch:40 }, { wch:40 }, { wch:40 }, { wch:40 }, { wch:11 }];
     ws["!autofilter"] = { ref: "A1:J" + rows.length };
     const wb = XLSX.utils.book_new();
@@ -1085,7 +1090,7 @@ function calBar(){
     <input type="search" id="fQ" placeholder="Search activities" value="${esc(state.q)}" style="width:220px" aria-label="Search activities">
     ${canEdit() ? `<label class="check"><input type="checkbox" id="fCan" ${state.showCancelled ? "checked" : ""}> Show cancelled</label>` : ""}
     <span class="grow"></span>
-    ${canEdit() ? `<button class="btn" id="addEv">Add activity</button><button class="btn line" id="impEv">Import from Excel</button><button class="btn line" id="delMany">Delete activities</button>` : ""}
+    ${canEdit() ? `<button class="btn" id="addEv">Add activity</button><button class="btn line" id="impEv">Import from Excel</button><button class="btn line" id="delMany">Delete calendar</button>` : ""}
     ${state.calView === "list" ? `<button class="btn line" id="printBtn">Print report</button>` : ""}
   </div>`;
 }
@@ -1285,12 +1290,12 @@ async function evAction(action, payload, msg){
 function openDeleteMany(){
   const [y, m] = state.month.split("-").map(Number);
   const d = $("#dlg"); d.className = "";
-  d.innerHTML = `<div class="dh"><div><h3>Delete activities</h3><p>Removes activities for good, with their proof links. The Day Tracker is not touched.</p></div>
+  d.innerHTML = `<div class="dh"><div><h3>Delete calendar</h3><p>Removes activities for good, with their proof links. Use it to clear a wrong import, then import the corrected file. The Day Tracker is not touched.</p></div>
     <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
   <div class="db">
     <div class="grid2">
-      <div class="field"><label for="dFrom">From</label><input type="date" id="dFrom" value="${state.month}-01" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
-      <div class="field"><label for="dTo">To</label><input type="date" id="dTo" value="${iso(new Date(y, m, 0, 12))}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
+      <div class="field"><label for="dFrom">From</label><input type="date" id="dFrom" value="${CONFIG.calFrom}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
+      <div class="field"><label for="dTo">To</label><input type="date" id="dTo" value="${CONFIG.calTo}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
     </div>
     <div class="row" style="margin-bottom:var(--s3)">
       <button class="btn line sm" data-dr="month">${MON[m-1]}</button>
@@ -1298,7 +1303,7 @@ function openDeleteMany(){
       <button class="btn line sm" data-dr="half2">July – December</button>
       <button class="btn line sm" data-dr="all">Whole of 2026</button>
     </div>
-    <label class="check"><input type="checkbox" id="dKeep" checked> Keep holidays and observances</label>
+    <label class="check"><input type="checkbox" id="dKeep"> Keep holidays and observances</label>
     <div class="notice" id="dCount" style="margin:var(--s4) 0"></div>
     <div class="field"><label for="dConfirm">Type DELETE to confirm</label><input type="text" id="dConfirm" autocomplete="off" spellcheck="false"></div>
     <p class="hint bad" id="dErr" hidden></p>
@@ -1335,7 +1340,7 @@ async function doDeleteMany(){
 
 /* ── Import activities from Excel ────────────────────────────── */
 function parseDateCell(v){
-  if (v instanceof Date && !isNaN(v)) return iso(new Date(v.getFullYear(), v.getMonth(), v.getDate(), 12));
+  if (v instanceof Date && !isNaN(v)) return iso(new Date(v.getTime() + 12 * 3600e3)); // round to the nearest day
   if (typeof v === "number" && window.XLSX) { const p = XLSX.SSF.parse_date_code(v); if (p) return `${p.y}-${pad(p.m)}-${pad(p.d)}`; }
   const s = String(v ?? "").trim(); if (!s) return null;
   let m = s.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/); if (m) return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
