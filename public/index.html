@@ -86,6 +86,10 @@ main{max-width:var(--maxw);margin:0 auto;padding:var(--s5) var(--s5) var(--s6)}
 .btn.plain{background:transparent;border-color:transparent;color:var(--red-deep);padding-inline:.5rem}
 .btn.plain:hover{background:var(--red-tint)}
 .btn.sm{padding:.35rem .7rem;font-size:.82rem}
+.btn.danger{background:var(--white);color:var(--red-deep);border-color:var(--red)}
+.btn.danger:hover{background:var(--red);color:var(--white)}
+.btn.danger.solid{background:var(--red-deep);border-color:var(--red-deep);color:var(--white)}
+.btn.danger.solid:hover{background:var(--red-ink)}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.onband{background:transparent;border-color:rgba(255,255,255,.55);color:var(--white)}
 .iconbtn{appearance:none;border:1.5px solid var(--rule);background:var(--white);border-radius:var(--r-sm);
@@ -1081,7 +1085,7 @@ function calBar(){
     <input type="search" id="fQ" placeholder="Search activities" value="${esc(state.q)}" style="width:220px" aria-label="Search activities">
     ${canEdit() ? `<label class="check"><input type="checkbox" id="fCan" ${state.showCancelled ? "checked" : ""}> Show cancelled</label>` : ""}
     <span class="grow"></span>
-    ${canEdit() ? `<button class="btn" id="addEv">Add activity</button><button class="btn line" id="impEv">Import from Excel</button>` : ""}
+    ${canEdit() ? `<button class="btn" id="addEv">Add activity</button><button class="btn line" id="impEv">Import from Excel</button><button class="btn line" id="delMany">Delete activities</button>` : ""}
     ${state.calView === "list" ? `<button class="btn line" id="printBtn">Print report</button>` : ""}
   </div>`;
 }
@@ -1220,7 +1224,10 @@ function openEvent(id){
     ${e.by ? `<p class="hint" style="margin-top:var(--s4)">Last changed by ${esc(e.by)}.</p>` : ""}
   </div>
   ${ed ? `<div class="df" style="justify-content:space-between">
-      ${e.cancelled ? `<button class="btn line" id="evRestore">Restore activity</button>` : `<button class="btn plain" id="evCancel">Cancel this activity</button>`}
+      <span class="row">
+        ${e.cancelled ? `<button class="btn line" id="evRestore">Restore activity</button>` : `<button class="btn plain" id="evCancel">Cancel this activity</button>`}
+        <button class="btn danger" id="evDelete">Delete</button>
+      </span>
       <button class="btn line" id="evEdit">Edit details</button></div>` : ""}`;
   d.dataset.ev = id;
   if (!d.open) d.showModal();
@@ -1272,6 +1279,58 @@ async function saveEventForm(){
 async function evAction(action, payload, msg){
   try { const j = await post(action, payload); applyCalendar(j); render(); if (msg) toast(msg); return true; }
   catch (e) { toast(e.message, true); return false; }
+}
+
+/* ── Delete many activities ──────────────────────────────────── */
+function openDeleteMany(){
+  const [y, m] = state.month.split("-").map(Number);
+  const d = $("#dlg"); d.className = "";
+  d.innerHTML = `<div class="dh"><div><h3>Delete activities</h3><p>Removes activities for good, with their proof links. The Day Tracker is not touched.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db">
+    <div class="grid2">
+      <div class="field"><label for="dFrom">From</label><input type="date" id="dFrom" value="${state.month}-01" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
+      <div class="field"><label for="dTo">To</label><input type="date" id="dTo" value="${iso(new Date(y, m, 0, 12))}" min="${CONFIG.calFrom}" max="${CONFIG.calTo}"></div>
+    </div>
+    <div class="row" style="margin-bottom:var(--s3)">
+      <button class="btn line sm" data-dr="month">${MON[m-1]}</button>
+      <button class="btn line sm" data-dr="half1">January – June</button>
+      <button class="btn line sm" data-dr="half2">July – December</button>
+      <button class="btn line sm" data-dr="all">Whole of 2026</button>
+    </div>
+    <label class="check"><input type="checkbox" id="dKeep" checked> Keep holidays and observances</label>
+    <div class="notice" id="dCount" style="margin:var(--s4) 0"></div>
+    <div class="field"><label for="dConfirm">Type DELETE to confirm</label><input type="text" id="dConfirm" autocomplete="off" spellcheck="false"></div>
+    <p class="hint bad" id="dErr" hidden></p>
+  </div>
+  <div class="df"><button class="btn line" data-close>Cancel</button><button class="btn danger solid" id="dGo" disabled>Delete</button></div>`;
+  if (!d.open) d.showModal();
+  countDeleteMany();
+}
+function deleteManyTargets(){
+  const from = $("#dFrom").value, to = $("#dTo").value, keep = $("#dKeep").checked;
+  if (!from || !to || to < from) return null;
+  return state.events.filter(e => e.start <= to && e.end >= from && (!keep || !["holiday","observance"].includes(e.category)));
+}
+function countDeleteMany(){
+  const list = deleteManyTargets(), box = $("#dCount"), go = $("#dGo");
+  if (!box) return;
+  if (!list) { box.textContent = "Choose a start date that is on or before the end date."; go.disabled = true; return; }
+  const proofs = list.reduce((a, e) => a + proofsOf(e.id).length, 0);
+  box.innerHTML = list.length
+    ? `<b>${list.length}</b> ${list.length > 1 ? "activities" : "activity"} will be deleted` + (proofs ? `, with <b>${proofs}</b> proof link${proofs > 1 ? "s" : ""}` : "") + `. Activities that run into this range from outside it are included.`
+    : "Nothing to delete in this range.";
+  go.disabled = !list.length || $("#dConfirm").value.trim() !== "DELETE";
+  go.textContent = list.length ? `Delete ${list.length}` : "Delete";
+}
+async function doDeleteMany(){
+  const list = deleteManyTargets(); if (!list || !list.length) return;
+  $("#dGo").disabled = true;
+  try {
+    const j = await post("deleteEvents", { from: $("#dFrom").value, to: $("#dTo").value, keepHolidays: $("#dKeep").checked, confirm: $("#dConfirm").value.trim() });
+    applyCalendar(j); render(); $("#dlg").close();
+    toast(`Deleted ${j.deleted} ${j.deleted === 1 ? "activity" : "activities"}`);
+  } catch (e) { const er = $("#dErr"); er.hidden = false; er.textContent = e.message; $("#dGo").disabled = false; }
 }
 
 /* ── Import activities from Excel ────────────────────────────── */
@@ -1436,6 +1495,23 @@ document.addEventListener("click", async ev => {
     return;
   }
   if (t.id === "evRestore") { if (await evAction("restoreEvent", { id: evId }, "Activity restored")) openEvent(evId); return; }
+  if (t.id === "evDelete") {
+    const e = state.events.find(x => x.id === evId);
+    const n = proofsOf(evId).length;
+    if (!confirm(`Delete "${e ? e.title : "this activity"}" permanently?` + (n ? `\n\nIts ${n} proof link${n > 1 ? "s" : ""} will be removed too.` : "") + "\n\nThis cannot be undone. To hide it instead, use Cancel this activity.")) return;
+    if (await evAction("deleteEvent", { id: evId }, "Activity deleted")) $("#dlg").close();
+    return;
+  }
+  if (t.id === "delMany") { openDeleteMany(); return; }
+  if (t.dataset.dr) {
+    const r = t.dataset.dr;
+    if (r === "month") { const [y, m] = state.month.split("-").map(Number); $("#dFrom").value = state.month + "-01"; $("#dTo").value = iso(new Date(y, m, 0, 12)); }
+    if (r === "half1") { $("#dFrom").value = CONFIG.calFrom; $("#dTo").value = "2026-06-30"; }
+    if (r === "half2") { $("#dFrom").value = "2026-07-01"; $("#dTo").value = CONFIG.calTo; }
+    if (r === "all") { $("#dFrom").value = CONFIG.calFrom; $("#dTo").value = CONFIG.calTo; }
+    countDeleteMany(); return;
+  }
+  if (t.id === "dGo") { doDeleteMany(); return; }
 });
 
 document.addEventListener("input", ev => {
@@ -1446,6 +1522,7 @@ document.addEventListener("input", ev => {
     clearTimeout(state._ff); state._ff = setTimeout(async () => { await flushAll(); render(); const f = $("#findFac"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
     return;
   }
+  if (t.id === "dConfirm") { countDeleteMany(); return; }
   if (t.id === "fQ") {
     state.q = t.value;
     clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
@@ -1465,6 +1542,7 @@ document.addEventListener("change", async ev => {
   if (t.id === "onlyOpen") { state.onlyOpen = t.checked; await flushAll(); render(); return; }
   if (t.id === "fType") { state.filter = t.value; render(); return; }
   if (t.id === "fCan") { state.showCancelled = t.checked; render(); return; }
+  if (t.id === "dFrom" || t.id === "dTo" || t.id === "dKeep") { countDeleteMany(); return; }
   if (t.id === "facFile" && t.files[0]) { handleFacultyFile(t.files[0]); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
 });

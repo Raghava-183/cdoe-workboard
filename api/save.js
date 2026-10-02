@@ -155,6 +155,30 @@ async function run(b, who) {
       return readCalendar();
     }
 
+    case 'deleteEvent': {
+      const id = String(b.id || '');
+      if (!/^\d+$/.test(id)) throw new Bad('Unknown activity');
+      await q`DELETE FROM proofs WHERE event_id = ${id}::bigint`;
+      await q`DELETE FROM events WHERE id = ${id}::bigint`;
+      return readCalendar();
+    }
+
+    case 'deleteEvents': {
+      if (!isDay(b.from) || !isDay(b.to) || b.to < b.from) throw new Bad('Choose a valid date range');
+      if (b.confirm !== 'DELETE') throw new Bad('Type DELETE to confirm');
+      const keep = b.keepHolidays !== false;
+      const gone = keep
+        ? await q`DELETE FROM events
+                  WHERE start_date <= ${b.to}::date AND end_date >= ${b.from}::date
+                    AND category NOT IN ('holiday', 'observance')
+                  RETURNING id`
+        : await q`DELETE FROM events
+                  WHERE start_date <= ${b.to}::date AND end_date >= ${b.from}::date
+                  RETURNING id`;
+      await q`DELETE FROM proofs WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id = proofs.event_id)`;
+      return Object.assign({ deleted: gone.length }, await readCalendar());
+    }
+
     case 'addProof': {
       const url = txt(b.url, 2000);
       if (!/^https?:\/\//i.test(url)) throw new Bad('That is not a valid link. It should start with https://');

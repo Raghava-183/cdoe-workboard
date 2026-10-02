@@ -7,6 +7,8 @@
 
 let _sql = null;
 
+/* Finds the Neon connection string even if Vercel gave it a prefix
+   (STORAGE_URL, NEON_DATABASE_URL, POSTGRES_URL and so on). */
 function dbUrl() {
   const env = process.env;
   if (env.DATABASE_URL) return env.DATABASE_URL;
@@ -33,7 +35,7 @@ async function getSql() {
       return (await db.query(text, values)).rows;
     };
   } else {
-    throw new Error('DATABASE_URL is not set. Connect the Neon database in Vercel and redeploy.');
+    throw new Error('No database connection found. In Vercel, open Storage, connect the Neon database to this project for Production, then redeploy.');
   }
   return _sql;
 }
@@ -114,14 +116,21 @@ export async function ensure() {
   await q`CREATE INDEX IF NOT EXISTS proofs_event ON proofs (event_id)`;
   await q`CREATE INDEX IF NOT EXISTS entries_emp ON day_entries (emp_id, day)`;
 
-  const [{ n }] = await q`SELECT count(*)::int AS n FROM events`;
-  if (n === 0) {
-    const s = SEED_EVENTS.map(r => r[0]), e = SEED_EVENTS.map(r => r[1]);
-    const c = SEED_EVENTS.map(r => r[2]), t = SEED_EVENTS.map(r => r[3]);
-    await q`
-      INSERT INTO events (start_date, end_date, category, title, updated_by)
-      SELECT a::date, b::date, c, d, 'University calendar'
-      FROM unnest(${s}::text[], ${e}::text[], ${c}::text[], ${t}::text[]) AS x(a, b, c, d)`;
+  /* The holidays are loaded once, ever. After that, deleting them from the
+     site keeps them deleted. */
+  await q`CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT NOT NULL DEFAULT '')`;
+  const [seeded] = await q`SELECT 1 AS x FROM meta WHERE k = 'holidays_seeded'`;
+  if (!seeded) {
+    const [{ n }] = await q`SELECT count(*)::int AS n FROM events`;
+    if (n === 0) {
+      const s = SEED_EVENTS.map(r => r[0]), e = SEED_EVENTS.map(r => r[1]);
+      const c = SEED_EVENTS.map(r => r[2]), t = SEED_EVENTS.map(r => r[3]);
+      await q`
+        INSERT INTO events (start_date, end_date, category, title, updated_by)
+        SELECT a::date, b::date, c, d, 'University calendar'
+        FROM unnest(${s}::text[], ${e}::text[], ${c}::text[], ${t}::text[]) AS x(a, b, c, d)`;
+    }
+    await q`INSERT INTO meta (k, v) VALUES ('holidays_seeded', 'yes') ON CONFLICT (k) DO NOTHING`;
   }
 
   ready = true;
