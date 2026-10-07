@@ -420,7 +420,7 @@ body.fs .rtable{flex:1;overflow:auto}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span id="foot"></span>
+    <span id="foot">Version 7 Oct 2026, 16:00</span>
   </div>
 </footer>
 
@@ -1357,7 +1357,13 @@ async function attachLink(evId){
   err.hidden = true; btn.disabled = true; btn.textContent = "Attaching…";
   try {
     const j = await post("addProof", { id: evId, url, label: label || "Supporting document" });
-    applyCalendar(j); render(); openEvent(evId); toast("Link attached");
+    applyCalendar(j); render(); openEvent(evId);
+    // Read it back from the server to be sure it was kept.
+    const back = await get("calendar");
+    if (!back.proofs.some(p => p.event_id === String(evId) && p.url === url)) {
+      const e2 = $("#pErr"); if (e2) { e2.hidden = false; e2.textContent = "The server accepted the link but did not keep it. Open " + location.origin + "/api/read?what=health and send it to support."; }
+      toast("Link was not kept by the server", true);
+    } else toast("Link attached and saved");
   } catch (e) { say(e.message); btn.disabled = false; btn.textContent = "Attach link"; }
 }
 

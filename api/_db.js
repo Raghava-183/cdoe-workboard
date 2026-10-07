@@ -19,6 +19,21 @@ function dbUrl() {
   return key ? env[key] : '';
 }
 
+/* Which database this server is using — host and variable name only, never the password. */
+export function dbInfo() {
+  const env = process.env, url = dbUrl();
+  const host = u => { try { return new URL(u).hostname; } catch { return '?'; } };
+  const vars = Object.keys(env).filter(k => /^postgres(ql)?:\/\//.test(env[k] || '')).sort()
+    .map(k => ({ name: k, host: host(env[k]) }));
+  return { using: vars.find(v => env[v.name] === url)?.name || (url ? '(other)' : 'none'), host: url ? host(url) : '', vars,
+           deployment: env.VERCEL_URL || '', env: env.VERCEL_ENV || 'local', commit: (env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) };
+}
+
+export async function logSave(who, action, target, ok, detail) {
+  try { await q`INSERT INTO audit (who, action, target, ok, detail) VALUES (${who || ''}, ${action || ''}, ${target || ''}, ${ok}, ${String(detail || '').slice(0, 300)})`; }
+  catch (e) { console.error('audit:', e); }
+}
+
 async function getSql() {
   if (_sql) return _sql;
 
@@ -132,6 +147,18 @@ export async function ensure() {
     }
     await q`INSERT INTO meta (k, v) VALUES ('holidays_seeded', 'yes') ON CONFLICT (k) DO NOTHING`;
   }
+
+  /* Every save attempt, kept so problems can be traced. */
+  await q`
+    CREATE TABLE IF NOT EXISTS audit (
+      id     BIGSERIAL PRIMARY KEY,
+      at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+      who    TEXT NOT NULL DEFAULT '',
+      action TEXT NOT NULL DEFAULT '',
+      target TEXT NOT NULL DEFAULT '',
+      ok     BOOLEAN NOT NULL DEFAULT true,
+      detail TEXT NOT NULL DEFAULT ''
+    )`;
 
   ready = true;
 }

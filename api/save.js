@@ -1,4 +1,4 @@
-import { q, ensure, readCalendar, readFaculty, readBody } from './_db.js';
+import { q, ensure, readCalendar, readFaculty, readBody, logSave } from './_db.js';
 import { login, verify } from './_auth.js';
 
 const CATS = ['holiday', 'observance', 'semester', 'assessment', 'techtalk', 'exam', 'admission',
@@ -28,7 +28,11 @@ export default async function handler(req, res) {
     if (b.action === 'check') { res.status(200).json({ ok: true, who }); return; }
 
     await ensure();
-    const out = await run(b, who);
+    const target = String(b.id || b.emp_id || b.proof_id || b.date || '');
+    let out;
+    try { out = await run(b, who); }
+    catch (e) { await logSave(who, b.action, target, false, e.message); throw e; }
+    if (b.action !== 'setSlot') await logSave(who, b.action, target, true, b.url || b.title || b.status || b.category || '');
     res.status(200).json(Object.assign({ ok: true }, out));
   } catch (err) {
     if (err.code !== 400) console.error('save:', err);
