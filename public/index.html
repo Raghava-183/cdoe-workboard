@@ -31,7 +31,7 @@
   --font:"Archivo", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   --r-sm:6px; --r:10px;
   --s1:.25rem; --s2:.5rem; --s3:.75rem; --s4:1rem; --s5:1.5rem; --s6:2rem;
-  --maxw:1440px;
+  --maxw:none;          /* use the full width of the screen */
 
   /* activity types */
   --t-holiday:#E3231B; --t-observance:#9E9494; --t-semester:#0D47A1; --t-assessment:#00897B;
@@ -312,6 +312,20 @@ dialog::backdrop{background:rgba(35,31,32,.45)}
 
 footer{border-top:1px solid var(--rule);color:var(--ink-3);font-size:.8rem}
 footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);display:flex;gap:var(--s4);flex-wrap:wrap;justify-content:space-between}
+
+/* ── Full-screen calendar ────────────────────────────────────── */
+.fslogo{display:none;height:40px;width:auto;margin-right:var(--s3)}
+body.fs .top,body.fs .band,body.fs footer,body.fs .bar,body.fs .side{display:none!important}
+body.fs .fslogo{display:block}
+body.fs main{min-height:100vh;display:flex;flex-direction:column;padding:.75rem 1.25rem 1rem}
+body.fs .calhead{margin-bottom:.6rem}
+body.fs .calwrap{flex:1;min-height:0;display:flex;flex-direction:column}
+body.fs .calwrap>div:first-child{flex:1;min-height:0;display:flex;flex-direction:column}
+body.fs .month{flex:1;min-height:0;display:flex;flex-direction:column}
+body.fs .mweek{flex:1 0 auto;min-height:130px}
+body.fs .mday{min-height:0}
+body.fs .legend{margin-top:.5rem}
+body.fs .rtable{flex:1;overflow:auto}
 
 /* ── Smaller screens ─────────────────────────────────────────── */
 @media (max-width:1100px){
@@ -630,6 +644,7 @@ function calHash(month = state.month, view = state.calView){ return "#calendar/"
 async function route(){
   if (pendingCount()) await flushAll();
   readHash();
+  if (state.tab !== "calendar") leaveFs();
   const want = state.tab === "tracker" ? trackerHash() : calHash();
   if (location.hash && location.hash !== want) history.replaceState(null, "", want);
   $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
@@ -1091,7 +1106,9 @@ function calBar(){
   const [y, m] = state.month.split("-").map(Number);
   const prev = iso(new Date(y, m - 2, 15)).slice(0,7), next = iso(new Date(y, m, 15)).slice(0,7);
   const prevOk = prev >= CONFIG.calFrom.slice(0,7), nextOk = next <= CONFIG.calTo.slice(0,7);
+  const fs = document.body.classList.contains("fs");
   return `<div class="calhead">
+    <img class="fslogo" src="/logo.jpg" alt="Vignan's Online">
     ${state.calView === "month" ? `
       <button class="iconbtn" data-month="${prev}" ${prevOk ? "" : "disabled"} aria-label="Previous month">‹</button>
       <h2>${MON[m-1]} ${y}</h2>
@@ -1102,6 +1119,7 @@ function calBar(){
       <button data-calview="month" aria-pressed="${state.calView === "month"}">Month</button>
       <button data-calview="list" aria-pressed="${state.calView === "list"}">List &amp; report</button>
     </div>
+    <button class="btn ${fs ? "" : "line"}" id="fsBtn" title="${fs ? "Press Esc to exit" : "Show only the calendar, filling the screen"}">${fs ? "✕ Exit full screen" : "⛶ Full screen"}</button>
   </div>
   <div class="bar">
     <select id="fType" aria-label="Filter by type">
@@ -1503,6 +1521,7 @@ document.addEventListener("click", async ev => {
   if (t.dataset.month) { go(calHash(t.dataset.month, "month")); return; }
   if (t.dataset.calview) { go(calHash(state.month, t.dataset.calview)); return; }
   if (t.id === "printBtn") { window.print(); return; }
+  if (t.id === "fsBtn") { document.body.classList.contains("fs") ? leaveFs() : enterFs(); return; }
   if (t.id === "addEv") { openEventForm(null); return; }
   if (t.id === "impEv") { openImport(); return; }
   if (t.dataset.ev && !t.closest("dialog")) { openEvent(t.dataset.ev); return; }
@@ -1584,9 +1603,29 @@ document.addEventListener("change", async ev => {
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
 });
 document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape" && document.body.classList.contains("fs") && !document.fullscreenElement && !$("#dlg").open) { leaveFs(); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); }
 });
 window.addEventListener("hashchange", route);
+
+/* ── Full-screen calendar (for a projector or TV) ────────────── */
+function enterFs(){
+  document.body.classList.add("fs");
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req) { try { const r = req.call(el); if (r && r.catch) r.catch(() => {}); } catch {} }
+  render();
+}
+function leaveFs(){
+  if (!document.body.classList.contains("fs")) return;
+  document.body.classList.remove("fs");
+  const ex = document.exitFullscreen || document.webkitExitFullscreen;
+  if ((document.fullscreenElement || document.webkitFullscreenElement) && ex) { try { const r = ex.call(document); if (r && r.catch) r.catch(() => {}); } catch {} }
+  render();
+}
+const fsChanged = () => { if (!(document.fullscreenElement || document.webkitFullscreenElement) && document.body.classList.contains("fs")) leaveFs(); };
+document.addEventListener("fullscreenchange", fsChanged);
+document.addEventListener("webkitfullscreenchange", fsChanged);
 $("#dlg").addEventListener("close", () => { delete $("#dlg").dataset.evid; delete $("#dlg").dataset.edit; });
 
 /* ═══════════════════════════════════════════════════════════════
