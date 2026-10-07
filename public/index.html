@@ -200,35 +200,46 @@ input:focus,select:focus,textarea:focus{border-color:var(--red);outline:none;box
 /* ── Activity Calendar ───────────────────────────────────────── */
 .calhead{display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s4)}
 .calhead h2{margin:0;font-size:2rem;font-weight:850;font-variation-settings:"wdth" 70;line-height:1;min-width:9ch;letter-spacing:-.01em}
-.calwrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--s5);align-items:start}
+.calwrap{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s5);align-items:start}
 .month{border:1.5px solid var(--rule);border-radius:var(--r);overflow:hidden}
 .mdow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-bottom:1.5px solid var(--ink)}
-.mdow div{padding:.5rem .6rem;font-size:.8rem;font-weight:650;color:var(--ink-2)}
+.mdow div{padding:.6rem .75rem;font-size:.85rem;font-weight:650;color:var(--ink-2)}
 .mdow div:last-child{color:var(--ink-3)}
 .mweek{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
 .mweek+.mweek{border-top:1px solid var(--rule)}
-.mday{min-height:112px;padding:.4rem .4rem .5rem;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:3px;min-width:0}
+.mday{min-height:150px;padding:.55rem .55rem .65rem;border-left:1px solid var(--rule);display:flex;flex-direction:column;gap:6px;min-width:0}
 .mday:first-child{border-left:0}
-.mday .d{font-size:.95rem;font-weight:750;font-variation-settings:"wdth" 80;padding:.1rem .25rem;align-self:flex-start;border-radius:5px;line-height:1.2}
+.mday .d{font-size:1.2rem;font-weight:800;font-variation-settings:"wdth" 80;padding:.05rem .35rem;align-self:flex-start;border-radius:6px;line-height:1.25}
 .mday.out{background:#FCFAFA}
 .mday.out .d{color:#CFC5C6}
 .mday.sun{background:#FBF8F8}
 .mday.sun .d{color:var(--ink-3)}
 .mday.hol{background:var(--red-tint)}
 .mday.today .d{background:var(--red);color:var(--white)}
-.chipb{appearance:none;border:0;cursor:pointer;text-align:left;width:100%;min-width:0;
-  font-size:.78rem;line-height:1.25;padding:.28rem .4rem .3rem .5rem;border-radius:4px;
-  background:color-mix(in srgb,var(--tone) 10%,white);color:var(--ink);border-left:3px solid var(--tone);
-  display:flex;gap:.3rem;align-items:flex-start}
-.chipb:hover{background:color-mix(in srgb,var(--tone) 18%,white)}
-.chipb .tx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.chipb.hol{background:transparent;border-left:0;padding-left:.25rem;color:var(--red-deep);font-weight:650}
-.chipb.cont{opacity:.7}
-.chipb.done .tx::before{content:"✓ ";color:var(--ok);font-weight:800}
-.chipb.gone{text-decoration:line-through;opacity:.5}
-.chipb .pf{margin-left:auto;flex:none;font-size:.68rem;color:var(--ink-3)}
 
-.side{display:flex;flex-direction:column;gap:var(--s5)}
+/* Activity card: type on top, full title, date range, status dot */
+.chipb{appearance:none;cursor:pointer;text-align:left;width:100%;min-width:0;position:relative;
+  display:flex;flex-direction:column;align-items:stretch;gap:.2rem;
+  font-size:.92rem;line-height:1.3;padding:.5rem .6rem .55rem .7rem;border-radius:6px;
+  background:color-mix(in srgb,var(--tone) 6%,white);color:var(--ink);
+  border:1px solid color-mix(in srgb,var(--tone) 28%,white);border-left:4px solid var(--tone);
+  box-shadow:0 1px 2px rgba(35,31,32,.05)}
+.chipb:hover{background:color-mix(in srgb,var(--tone) 13%,white)}
+.chipb .ty{font-size:.76rem;font-weight:750;font-variation-settings:"wdth" 75;letter-spacing:.02em;
+  color:color-mix(in srgb,var(--tone) 82%,black);padding-right:1.1rem;line-height:1.2}
+.chipb .tx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;font-weight:500}
+.chipb .ft{display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap;font-size:.75rem;line-height:1.2;margin-top:.1rem}
+.chipb .rg{font-weight:650;color:color-mix(in srgb,var(--tone) 75%,black)}
+.chipb .pf{color:var(--ink-3)}
+.chipb .st{position:absolute;top:.6rem;right:.6rem;width:10px;height:10px;border-radius:50%;border:1.5px solid #BDB2B3;background:var(--white)}
+.chipb .st.ok{background:var(--ok);border-color:var(--ok)}
+.chipb.cont{padding:.3rem .55rem;font-size:.8rem;opacity:.8;box-shadow:none}
+.chipb.cont .tx{-webkit-line-clamp:1}
+.chipb.hol{background:transparent;border:0;box-shadow:none;padding:.1rem .3rem;color:var(--red-deep);font-weight:700;font-size:.9rem}
+.chipb.hol:hover{background:rgba(227,35,27,.06)}
+.chipb.gone{text-decoration:line-through;opacity:.5}
+
+.side{display:grid;grid-template-columns:minmax(260px,320px) repeat(2,minmax(0,1fr));gap:var(--s5);align-items:start}
 .side h3{margin:0 0 .5rem;font-size:1.05rem;font-weight:800;font-variation-settings:"wdth" 80}
 .side .count{color:var(--ink-3);font-weight:500;font-size:.85rem}
 .alist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
@@ -304,8 +315,8 @@ footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);displ
 
 /* ── Smaller screens ─────────────────────────────────────────── */
 @media (max-width:1100px){
-  .calwrap{grid-template-columns:1fr}
-  .side{display:grid;grid-template-columns:1fr 1fr;gap:var(--s5)}
+  .side{grid-template-columns:1fr 1fr}
+  .side .progress{grid-column:1/-1}
 }
 @media (max-width:900px){
   .top-in{flex-wrap:wrap;padding:var(--s3) var(--s4)}
@@ -330,9 +341,12 @@ footer div{max-width:var(--maxw);margin:0 auto;padding:var(--s4) var(--s5);displ
   .scell:nth-child(odd){border-left:1px solid var(--rule)}
   .scell:nth-child(n+4){border-top:1px solid var(--rule)}
   .scell .sl{display:block;font-size:.72rem;font-weight:700;color:var(--red-deep);padding:.1rem .5rem 0}
-  .mday{min-height:78px;padding:.25rem}
-  .chipb{font-size:.7rem;padding:.2rem .3rem}
-  .chipb .pf{display:none}
+  .mday{min-height:78px;padding:.25rem;gap:3px}
+  .mday .d{font-size:.95rem}
+  .chipb{font-size:.7rem;padding:.2rem .3rem;border-width:0 0 0 3px;border-radius:4px;box-shadow:none}
+  .chipb .ty,.chipb .ft,.chipb .st{display:none}
+  .chipb .tx{-webkit-line-clamp:2}
+  .chipb.hol{font-size:.7rem}
   .side{grid-template-columns:1fr}
   .dayhead h2,.calhead h2{font-size:1.6rem}
 }
@@ -452,6 +466,9 @@ const TYPES = {
   holiday:     { name:"Holiday",                 activity:false },
   observance:  { name:"Observance",              activity:false }
 };
+/* Shorter type labels for the calendar cards */
+const SHORT = { semester:"Semester", assessment:"Assessment", orientation:"Orientation", counselling:"Live session",
+  fdp:"FDP / Training", meeting:"Meeting", event:"Event", content:"Content", admission:"Admissions" };
 const PROOF_KINDS = ["Photographs","Attendance sheet","Event report","Brochure / poster",
   "Recording link","Resource person profile","Feedback forms","Certificates","Minutes of meeting"];
 
@@ -477,6 +494,10 @@ const tone = cat => `var(--t-${TYPES[cat] ? cat : "event"})`;
 const isWork = s => CONFIG.workDays.includes(D(s).getDay());
 const inRange = s => s >= CONFIG.from && s <= CONFIG.to;
 const mondayOf = s => { const d = D(s); const k = (d.getDay()+6)%7; d.setDate(d.getDate()-k); return iso(d); };
+/* "6–8 Aug 2026" or "28 Sep – 3 Oct 2026" */
+const rangeText = e => { const a = D(e.start), b = D(e.end), M = d => MON[d.getMonth()].slice(0,3);
+  return a.getMonth() === b.getMonth() ? `${a.getDate()}–${b.getDate()} ${M(b)} ${b.getFullYear()}`
+    : `${a.getDate()} ${M(a)} – ${b.getDate()} ${M(b)} ${b.getFullYear()}`; };
 const spanText = e => e.start === e.end ? longDate(e.start)
   : shortDate(e.start) + " – " + shortDate(e.end) + " " + D(e.end).getFullYear();
 
@@ -1123,7 +1144,8 @@ function drawMonth(){
     html += `</div>`;
   }
   html += `</div>
-    <div class="legend">${Object.entries(TYPES).map(([k, t]) => `<span style="--tone:${tone(k)}"><i></i>${t.name}</span>`).join("")}</div>
+    <div class="legend">${Object.entries(TYPES).map(([k, t]) => `<span style="--tone:${tone(k)}"><i></i>${t.name}</span>`).join("")}
+      <span><i style="border-radius:50%;background:var(--ok)"></i>Completed</span><span><i style="border-radius:50%;background:#fff;border:1.5px solid #BDB2B3"></i>Planned</span></div>
   </div>${drawSide(evs, first, last)}</div>`;
   return html;
 }
@@ -1132,9 +1154,19 @@ function chip(e, day){
   const hol = e.category === "holiday" || e.category === "observance";
   const cont = e.start !== day && D(day).getDay() !== 1;
   const n = proofsOf(e.id).length;
-  const cls = ["chipb", hol ? "hol" : "", cont ? "cont" : "", e.status === "completed" ? "done" : "", e.cancelled ? "gone" : ""].filter(Boolean).join(" ");
-  return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${esc(e.title + " — " + spanText(e))}">
-    <span class="tx">${cont ? "↳ " : ""}${esc(e.title)}</span>${!hol && n ? `<span class="pf">${n} ${n > 1 ? "files" : "file"}</span>` : ""}</button>`;
+  const cls = ["chipb", hol ? "hol" : "", cont ? "cont" : "", e.cancelled ? "gone" : ""].filter(Boolean).join(" ");
+  const tip = esc(e.title + " — " + spanText(e));
+  if (hol) return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${tip}"><span class="tx">${esc(e.title)}</span></button>`;
+  if (cont) return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${tip}"><span class="tx">↳ ${esc(e.title)}</span></button>`;
+  const act = TYPES[e.category]?.activity, done = e.status === "completed";
+  const foot = [e.start !== e.end ? `<span class="rg">${esc(rangeText(e))}</span>` : "",
+                n ? `<span class="pf">${n} ${n > 1 ? "files" : "file"}</span>` : ""].join("");
+  return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${tip}">
+    <span class="ty">${esc(SHORT[e.category] || TYPES[e.category]?.name || "Activity")}</span>
+    <span class="tx">${esc(e.title)}</span>
+    ${foot ? `<span class="ft">${foot}</span>` : ""}
+    ${act ? `<span class="st${done ? " ok" : ""}" title="${done ? "Completed" : "Planned"}"></span>` : ""}
+  </button>`;
 }
 
 function drawSide(evs, first, last){
@@ -1234,7 +1266,7 @@ function openEvent(id){
         <button class="btn danger" id="evDelete">Delete</button>
       </span>
       <button class="btn line" id="evEdit">Edit details</button></div>` : ""}`;
-  d.dataset.ev = id;
+  d.dataset.evid = id;   // not "data-ev": that would make every click inside the dialog reopen it
   if (!d.open) d.showModal();
 }
 
@@ -1473,10 +1505,10 @@ document.addEventListener("click", async ev => {
   if (t.id === "printBtn") { window.print(); return; }
   if (t.id === "addEv") { openEventForm(null); return; }
   if (t.id === "impEv") { openImport(); return; }
-  if (t.dataset.ev) { openEvent(t.dataset.ev); return; }
+  if (t.dataset.ev && !t.closest("dialog")) { openEvent(t.dataset.ev); return; }
   if (t.dataset.back) { openEvent(t.dataset.back); return; }
   if (t.id === "eSave") { saveEventForm(); return; }
-  const evId = $("#dlg").dataset.ev;
+  const evId = $("#dlg").dataset.evid;
   if (t.dataset.status) {
     if (await evAction("setStatus", { id: evId, status: t.dataset.status }, t.dataset.status === "completed" ? "Marked completed" : "Marked planned")) openEvent(evId);
     return;
@@ -1555,6 +1587,7 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); }
 });
 window.addEventListener("hashchange", route);
+$("#dlg").addEventListener("close", () => { delete $("#dlg").dataset.evid; delete $("#dlg").dataset.edit; });
 
 /* ═══════════════════════════════════════════════════════════════
    Start
