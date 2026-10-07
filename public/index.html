@@ -516,7 +516,11 @@ const spanText = e => e.start === e.end ? longDate(e.start)
   : shortDate(e.start) + " – " + shortDate(e.end) + " " + D(e.end).getFullYear();
 
 function toast(msg, bad){
-  const t = $("#toast");
+  const t = toast.el || (toast.el = $("#toast"));   // keep hold of it: popups rebuild their contents
+  // An open popup sits above the page, so the message must go inside it to be seen.
+  const open = [...document.querySelectorAll("dialog[open]")].pop();
+  const home = open || document.body;
+  if (t.parentNode !== home) home.appendChild(t);
   t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
   clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, bad ? 6000 : 2600);
 }
@@ -1178,7 +1182,7 @@ function chip(e, day){
   if (cont) return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${tip}"><span class="tx">↳ ${esc(e.title)}</span></button>`;
   const act = TYPES[e.category]?.activity, done = e.status === "completed";
   const foot = [e.start !== e.end ? `<span class="rg">${esc(rangeText(e))}</span>` : "",
-                n ? `<span class="pf">${n} ${n > 1 ? "files" : "file"}</span>` : ""].join("");
+                n ? `<span class="pf">🔗 ${n} ${n > 1 ? "links" : "link"}</span>` : ""].join("");
   return `<button class="${cls}" style="--tone:${tone(e.category)}" data-ev="${e.id}" title="${tip}">
     <span class="ty">${esc(SHORT[e.category] || TYPES[e.category]?.name || "Activity")}</span>
     <span class="tx">${esc(e.title)}</span>
@@ -1268,6 +1272,7 @@ function openEvent(id){
               <datalist id="pKinds">${PROOF_KINDS.map(k => `<option value="${k}">`).join("")}</datalist></div>
             <div class="field"><label for="pUrl">Google Drive link</label><input id="pUrl" type="url" inputmode="url" placeholder="https://drive.google.com/…"></div>
           </div>
+          <p class="hint bad" id="pErr" hidden></p>
           <div class="row"><button class="btn" id="pAdd">Attach link</button><span class="hint">Set the file to "Anyone with the link can view" first.</span></div>` : ""}
       </div>
       <div class="sec"><h4>Notes</h4>
@@ -1334,6 +1339,26 @@ async function saveEventForm(){
 async function evAction(action, payload, msg){
   try { const j = await post(action, payload); applyCalendar(j); render(); if (msg) toast(msg); return true; }
   catch (e) { toast(e.message, true); return false; }
+}
+
+/* ── Attach a proof link ───────────────────────────────────── */
+const looksLikeLink = v => /^(https?:\/\/|www\.|[a-z0-9-]+(\.[a-z0-9-]+)+\/)/i.test(v);
+async function attachLink(evId){
+  const err = $("#pErr"), btn = $("#pAdd");
+  const say = m => { err.hidden = false; err.textContent = m; };
+  let url = $("#pUrl").value.trim(), label = $("#pLbl").value.trim();
+  // Link pasted into the first box by mistake: use it as the link.
+  if (!url && looksLikeLink(label)) { url = label; label = ""; }
+  if (!url) { say("Paste the Google Drive link in the second box."); $("#pUrl").focus(); return; }
+  if (!/^https?:\/\//i.test(url)) {
+    if (looksLikeLink(url)) url = "https://" + url;
+    else { say("That doesn't look like a link. Copy it from Google Drive using Share → Copy link."); $("#pUrl").focus(); return; }
+  }
+  err.hidden = true; btn.disabled = true; btn.textContent = "Attaching…";
+  try {
+    const j = await post("addProof", { id: evId, url, label: label || "Supporting document" });
+    applyCalendar(j); render(); openEvent(evId); toast("Link attached");
+  } catch (e) { say(e.message); btn.disabled = false; btn.textContent = "Attach link"; }
 }
 
 /* ── Delete many activities ──────────────────────────────────── */
@@ -1532,12 +1557,7 @@ document.addEventListener("click", async ev => {
     if (await evAction("setStatus", { id: evId, status: t.dataset.status }, t.dataset.status === "completed" ? "Marked completed" : "Marked planned")) openEvent(evId);
     return;
   }
-  if (t.id === "pAdd") {
-    const url = $("#pUrl").value.trim(), label = $("#pLbl").value.trim() || "Supporting document";
-    if (!/^https?:\/\//i.test(url)) { toast("Paste the full link, starting with https://", true); return; }
-    if (await evAction("addProof", { id: evId, url, label }, "Link attached")) openEvent(evId);
-    return;
-  }
+  if (t.id === "pAdd") { attachLink(evId); return; }
   if (t.dataset.rmproof) {
     if (!confirm("Remove this link?")) return;
     if (await evAction("removeProof", { proof_id: t.dataset.rmproof }, "Link removed")) openEvent(evId);
@@ -1604,6 +1624,7 @@ document.addEventListener("change", async ev => {
 });
 document.addEventListener("keydown", ev => {
   if (ev.key === "Escape" && document.body.classList.contains("fs") && !document.fullscreenElement && !$("#dlg").open) { leaveFs(); return; }
+  if (ev.key === "Enter" && (ev.target.id === "pUrl" || ev.target.id === "pLbl")) { ev.preventDefault(); attachLink($("#dlg").dataset.evid); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); }
 });
 window.addEventListener("hashchange", route);
