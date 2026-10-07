@@ -420,7 +420,7 @@ body.fs .rtable{flex:1;overflow:auto}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span id="foot">Version 7 Oct 2026, 16:00</span>
+    <span id="foot">Version 7 Oct 2026, 16:30</span>
   </div>
 </footer>
 
@@ -1273,12 +1273,12 @@ function openEvent(id){
             <div class="field"><label for="pUrl">Google Drive link</label><input id="pUrl" type="url" inputmode="url" placeholder="https://drive.google.com/…"></div>
           </div>
           <p class="hint bad" id="pErr" hidden></p>
-          <div class="row"><button class="btn" id="pAdd">Attach link</button><span class="hint">Set the file to "Anyone with the link can view" first.</span></div>` : ""}
+          <div class="row"><button class="btn" id="pAdd">Attach link</button><span class="hint">Saves by itself when you paste. Set the file to "Anyone with the link can view" first.</span></div>` : ""}
       </div>
       <div class="sec"><h4>Notes</h4>
         ${ed ? `<div class="field"><label for="evNotes" class="sr">Notes</label>
-          <textarea id="evNotes" rows="4" placeholder="Resource person, platform or venue, number of participants, outcome">${esc(e.notes)}</textarea></div>
-          <button class="btn line sm" id="notesSave">Save notes</button>`
+          <textarea id="evNotes" rows="4" data-orig="${esc(e.notes)}" placeholder="Resource person, platform or venue, number of participants, outcome">${esc(e.notes)}</textarea></div>
+          <div class="row"><button class="btn line sm" id="notesSave">Save notes</button><span class="hint" id="notesState">Saves by itself as you type.</span></div>`
         : (e.notes ? `<p style="white-space:pre-wrap;margin:0">${esc(e.notes)}</p>` : `<p class="hint">No notes yet.</p>`)}
       </div>` : `<p class="hint" style="margin-top:0">${e.category === "holiday" ? "The Day Tracker marks this day as a holiday. Slot entries are optional." : "Shown on the calendar for reference."}</p>`}
     ${e.by ? `<p class="hint" style="margin-top:var(--s4)">Last changed by ${esc(e.by)}.</p>` : ""}
@@ -1343,29 +1343,72 @@ async function evAction(action, payload, msg){
 
 /* ── Attach a proof link ───────────────────────────────────── */
 const looksLikeLink = v => /^(https?:\/\/|www\.|[a-z0-9-]+(\.[a-z0-9-]+)+\/)/i.test(v);
-async function attachLink(evId){
-  const err = $("#pErr"), btn = $("#pAdd");
-  const say = m => { err.hidden = false; err.textContent = m; };
-  let url = $("#pUrl").value.trim(), label = $("#pLbl").value.trim();
-  // Link pasted into the first box by mistake: use it as the link.
-  if (!url && looksLikeLink(label)) { url = label; label = ""; }
-  if (!url) { say("Paste the Google Drive link in the second box."); $("#pUrl").focus(); return; }
+/* Saves the link in the popup. Runs on paste, on leaving the box, on Enter,
+   on the Attach button, and when the popup is closed — so nothing is lost. */
+const linkBusy = new Set();
+function readLinkBoxes(){
+  const u = $("#pUrl"), l = $("#pLbl");
+  if (!u || !l) return null;
+  let url = u.value.trim(), label = l.value.trim();
+  if (!url && looksLikeLink(label)) { url = label; label = ""; }   // link pasted in the first box
+  if (!url) return { empty: true };
   if (!/^https?:\/\//i.test(url)) {
     if (looksLikeLink(url)) url = "https://" + url;
-    else { say("That doesn't look like a link. Copy it from Google Drive using Share → Copy link."); $("#pUrl").focus(); return; }
+    else return { error: "That doesn't look like a link. In Google Drive use Share → Copy link, then paste it here." };
   }
-  err.hidden = true; btn.disabled = true; btn.textContent = "Attaching…";
-  try {
-    const j = await post("addProof", { id: evId, url, label: label || "Supporting document" });
-    applyCalendar(j); render(); openEvent(evId);
-    // Read it back from the server to be sure it was kept.
-    const back = await get("calendar");
-    if (!back.proofs.some(p => p.event_id === String(evId) && p.url === url)) {
-      const e2 = $("#pErr"); if (e2) { e2.hidden = false; e2.textContent = "The server accepted the link but did not keep it. Open " + location.origin + "/api/read?what=health and send it to support."; }
-      toast("Link was not kept by the server", true);
-    } else toast("Link attached and saved");
-  } catch (e) { say(e.message); btn.disabled = false; btn.textContent = "Attach link"; }
+  return { url, label: label || "Supporting document" };
 }
+async function attachLink(evId, opts = {}){
+  const err = $("#pErr"), btn = $("#pAdd");
+  const say = m => { if (err && !opts.quiet) { err.hidden = false; err.textContent = m; } };
+  const v = readLinkBoxes();
+  if (!v) return;
+  if (v.empty) { if (!opts.auto) { say("Paste the Google Drive link in the second box."); $("#pUrl").focus(); report("attach: link box empty"); } return; }
+  if (v.error) { say(v.error); report("attach: not a link: " + ($("#pUrl").value || $("#pLbl").value).slice(0, 80)); return; }
+  const key = evId + "|" + v.url;
+  if (linkBusy.has(key) || state.proofs.some(p => p.event_id === String(evId) && p.url === v.url)) return;
+  linkBusy.add(key);
+  if (err) err.hidden = true;
+  if (btn) { btn.disabled = true; btn.textContent = "Saving link…"; }
+  try {
+    const j = await post("addProof", { id: evId, url: v.url, label: v.label });
+    applyCalendar(j); render();
+    const d = $("#dlg");
+    if (d.open && d.dataset.evid === String(evId)) {
+      const notes = $("#evNotes") ? $("#evNotes").value : null;   // keep unsaved notes text
+      openEvent(evId);
+      if (notes !== null && $("#evNotes")) $("#evNotes").value = notes;
+    }
+    toast("Link saved ✓");
+  } catch (e) { say(e.message); toast("Link not saved: " + e.message, true); if (btn && btn.isConnected) { btn.disabled = false; btn.textContent = "Attach link"; } }
+  finally { linkBusy.delete(key); }
+}
+
+/* Notes save by themselves a second after you stop typing. */
+let notesTimer = null;
+async function saveNotes(evId, quiet){
+  clearTimeout(notesTimer); notesTimer = null;
+  const ta = $("#evNotes"); if (!ta) return;
+  const val = ta.value;
+  if (val === (ta.dataset.orig ?? "")) return;
+  const st = $("#notesState"); if (st && !quiet) st.textContent = "Saving…";
+  try {
+    const j = await post("setNotes", { id: evId, notes: val });
+    applyCalendar(j); render();
+    ta.dataset.orig = val;
+    const now = new Date();
+    if (st && st.isConnected) st.textContent = "Saved ✓ " + now.toLocaleTimeString([], { hour:"numeric", minute:"2-digit" });
+    if (quiet) toast("Notes saved ✓");
+  } catch (e) { if (st && st.isConnected) st.textContent = "Not saved: " + e.message; toast("Notes not saved: " + e.message, true); }
+}
+
+/* Send browser-side problems to the save log so they can be traced. */
+function report(msg){
+  try { fetch("/api/save", { method:"POST", headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ action:"report", msg: String(msg).slice(0, 280), who: state.session?.who || "" }) }); } catch {}
+}
+window.addEventListener("error", e => report("error: " + e.message + " @" + e.lineno));
+window.addEventListener("unhandledrejection", e => report("error: " + (e.reason && e.reason.message || e.reason)));
 
 /* ── Delete many activities ──────────────────────────────────── */
 function openDeleteMany(){
@@ -1569,7 +1612,7 @@ document.addEventListener("click", async ev => {
     if (await evAction("removeProof", { proof_id: t.dataset.rmproof }, "Link removed")) openEvent(evId);
     return;
   }
-  if (t.id === "notesSave") { if (await evAction("setNotes", { id: evId, notes: $("#evNotes").value }, "Notes saved")) openEvent(evId); return; }
+  if (t.id === "notesSave") { saveNotes(evId); return; }
   if (t.id === "evEdit") { openEventForm(evId); return; }
   if (t.id === "evCancel") {
     if (!confirm("Cancel this activity? It disappears from the calendar. Its proof links are kept and come back if you restore it.")) return;
@@ -1604,6 +1647,7 @@ document.addEventListener("input", ev => {
     clearTimeout(state._ff); state._ff = setTimeout(async () => { await flushAll(); render(); const f = $("#findFac"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
     return;
   }
+  if (t.id === "evNotes" && canEdit()) { const id = $("#dlg").dataset.evid; const st = $("#notesState"); if (st) st.textContent = "Typing…"; clearTimeout(notesTimer); notesTimer = setTimeout(() => saveNotes(id), 1000); return; }
   if (t.id === "dConfirm") { countDeleteMany(); return; }
   if (t.id === "fQ") {
     state.q = t.value;
@@ -1624,6 +1668,7 @@ document.addEventListener("change", async ev => {
   if (t.id === "onlyOpen") { state.onlyOpen = t.checked; await flushAll(); render(); return; }
   if (t.id === "fType") { state.filter = t.value; render(); return; }
   if (t.id === "fCan") { state.showCancelled = t.checked; render(); return; }
+  if (t.id === "pUrl") { attachLink($("#dlg").dataset.evid, { auto:true }); return; }
   if (t.id === "dFrom" || t.id === "dTo" || t.id === "dKeep") { countDeleteMany(); return; }
   if (t.id === "facFile" && t.files[0]) { handleFacultyFile(t.files[0]); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
@@ -1653,7 +1698,15 @@ function leaveFs(){
 const fsChanged = () => { if (!(document.fullscreenElement || document.webkitFullscreenElement) && document.body.classList.contains("fs")) leaveFs(); };
 document.addEventListener("fullscreenchange", fsChanged);
 document.addEventListener("webkitfullscreenchange", fsChanged);
-$("#dlg").addEventListener("close", () => { delete $("#dlg").dataset.evid; delete $("#dlg").dataset.edit; });
+$("#dlg").addEventListener("close", () => {
+  const d = $("#dlg"), id = d.dataset.evid;
+  // Closing the popup saves whatever was left in the link and notes boxes.
+  if (id && canEdit()) { attachLink(id, { quiet:true, auto:true }); saveNotes(id, true); }
+  delete d.dataset.evid; delete d.dataset.edit;
+});
+document.addEventListener("paste", ev => {
+  if (ev.target.id === "pUrl" || ev.target.id === "pLbl") setTimeout(() => attachLink($("#dlg").dataset.evid, { auto:true }), 60);
+});
 
 /* ═══════════════════════════════════════════════════════════════
    Start

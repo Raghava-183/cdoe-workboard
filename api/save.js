@@ -23,6 +23,13 @@ export default async function handler(req, res) {
       return;
     }
 
+    if (b.action === 'report') {
+      await ensure();
+      await logSave('browser ' + String(b.who || '').slice(0, 40), 'report', '', false, String(b.msg || '').slice(0, 280));
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     const who = verify(b.token);
     if (!who) { res.status(401).json({ ok: false, error: 'Your sign-in has expired. Sign in again to keep editing.' }); return; }
     if (b.action === 'check') { res.status(200).json({ ok: true, who }); return; }
