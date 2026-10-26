@@ -2,139 +2,89 @@
 
 Centre for Distance and Online Education · Vignan's Foundation for Science, Technology & Research
 
-Two tabs:
+Two calendars, one tab each:
 
-- **Activity Calendar** — department activities from July to December 2026, each with a status (planned or completed), notes and Google Drive proof links. Month view, a list view, and a printable report.
-- **Day Tracker** — every faculty member gets four slots for every working day, Monday to Saturday, up to 31 December 2026:
+- **Activity Calendar**: webinars, Tech Talks, workshops, meetings and other department activities. Each one has a status (planned or completed), notes and Google Drive proof links.
+- **Calendar of Events (COE)**: the academic calendar, covering semester commencements, continuous-assessment windows, end-semester examinations and holidays. Every entry carries its batch (for example *July 2025 – Sem III*), and the cards are coloured by batch.
 
-  | Slot | Time |
-  | ---- | ---- |
-  | Slot 1 | 8:15 AM – 10:00 AM |
-  | Slot 2 | 10:00 AM – 12:00 PM |
-  | Slot 3 | 12:00 PM – 2:00 PM |
-  | Slot 4 | 2:00 PM – 4:00 PM |
-
-  Slots save by themselves a moment after you stop typing. The week overview shows who has filled what, and **Download Excel** exports any date range.
-
-Anyone with the link can view. Editing needs the department login. Same shape as the Activity Calendar project: Vercel in front, Neon Postgres behind.
+Both calendars have a month view with a strip of every month, a list view you can print, full-screen mode for a projector, and Import, Add and Delete. Anyone with the link can view. Editing needs the department login. Vercel serves the site and Neon Postgres stores the data.
 
 ---
 
-## Deploy — step by step
+## Importing a calendar
 
-### 1. Put the code on GitHub
+Open the tab, sign in, and choose **Import from Excel**. Three layouts are read as they are:
 
-Create an empty repository named `cdoe-workboard`, then from this folder:
+1. **The Master Calendar of Events workbook**: month boxes holding the date and its lines, such as `• July 2025 – Sem III: Continuous Assessment – I Submission Window Open`. The batch is taken from the start of each line.
+2. **The department activity calendar workbook**: a row of day numbers with the events typed under each day. The workbook's own colour key (HOLIDAY, Tech Talks …) sets the types.
+3. **A table** with Start date, End date, Title, Type and For/Batch. **Download a blank table** in the import window gives a starter file.
 
-```
-git init
-git add .
-git commit -m "CDOE Workboard"
-git branch -M main
-git remote add origin https://github.com/<your-username>/cdoe-workboard.git
-git push -u origin main
-```
+You see every entry, and can change its type, before anything is saved. Then choose:
 
-### 2. Import it into Vercel
+- **Add the new entries**: only entries that are not on the calendar yet are added. Titles are matched ignoring case, spaces and dashes, so importing the same file twice adds nothing.
+- **Replace the calendar with this file**: entries that are no longer in the file are removed, **except** ones with proof links, notes or a Completed status, which are always kept. Use this when an updated calendar arrives.
 
-On vercel.com, **Add New → Project**, pick the repository, deploy. Leave the framework as "Other".
-It will show an error on opening. Expected — no database yet.
-
-### 3. Add the database
-
-**Storage → Create Database → Neon** → free plan, Mumbai or Singapore region.
-**Connect Project** → choose `cdoe-workboard`, tick **Production**, and **leave Custom Prefix empty** so the variable is called exactly `DATABASE_URL`.
-
-Tables are created automatically on the first visit, and the university holidays for July–December 2026 are loaded once.
-
-### 4. Set the login
-
-Project → **Settings → Environment Variables**. Add two:
-
-| Name | Value |
-| ---- | ----- |
-| `LOGIN_ID` | the login ID |
-| `LOGIN_PASSWORD` | the password |
-
-Set them here only. Never put the real password in the code or in `.env.example` — the GitHub repository can be public.
-
-### 5. Redeploy
-
-**Deployments → newest → ⋯ → Redeploy.** Environment variables reach the code only after a redeploy.
-
-### 6. Upload the faculty list
-
-Open the site → **Sign in to edit** → **Day Tracker → Faculty list** → choose your Excel or CSV file.
-Columns: **Name, Employee ID, Designation** (headings in the first row; extra columns such as S.No are ignored).
-You see a preview before anything is saved. Upload again any time: people are matched by Employee ID and updated.
-
----
+**Delete calendar** clears one calendar, either in full or for a date range, after you type DELETE. The other calendar is never touched.
 
 ## Everyday use
 
-- **Fill slots** — Day Tracker → pick the day → type in the four boxes. "Saved" appears under the person's name.
-- **Check progress** — the red bar under each day shows how much is filled. **Only incomplete** hides people who are done. **Week overview** shows the whole week at once.
-- **Holidays** — days marked Holiday on the calendar show a notice in the Day Tracker. Entries stay optional.
-- **Add an activity** — Activity Calendar → **Add activity**, or **Import from Excel** with columns Start date, End date, Title, Type, For.
-- **Proof** — open an activity → paste a Google Drive link → **Attach link**. Set the file to *Anyone with the link can view* first.
-- **Report** — Activity Calendar → **List & report** → **Print report** (choose "Save as PDF" in the print dialog for a PDF).
+- **Add one entry**: use **Add activity** or **Add event**, or hover over a day and click **+**.
+- **Proof** (Activity Calendar): open an activity and paste the Google Drive link. It saves by itself. Set the file to *Anyone with the link can view* first.
+- **Notes**: they save a second after you stop typing, and again when the popup closes.
+- **Find things**: filter by type, or by batch on the COE, or search. **Next 14 days** under the calendar shows what's coming up.
+- **Report**: open **List & report**, then **Print**. Choose "Save as PDF" in the print window to get a PDF.
+- **Projector**: **Full screen** shows only the logo, the month and the calendar. Press Esc to leave.
 
-## Changing the dates or slot times
+## Deploying an update
 
-At the top of the script in `public/index.html`:
+Commit and push to GitHub. Vercel redeploys by itself. Database changes run on the first visit after a deploy:
 
-```js
-const CONFIG = {
-  from: "2026-07-01",
-  to:   "2026-12-31",
-  workDays: [1,2,3,4,5,6],   // Monday to Saturday
-  slots: [ ... ]
-};
-```
+- Activities that existed before the COE was added stay on the Activity Calendar.
+- The Day Tracker was removed in October 2026. Its `faculty` and `day_entries` tables are deleted.
 
-Edit, commit, push. Vercel redeploys by itself. Saved entries are not touched.
+## First-time setup (new copy of the site)
+
+1. Push this folder to a GitHub repository, then in Vercel choose **Add New → Project** and pick it. Framework: "Other".
+2. **Storage → Create Database → Neon** (free plan, Mumbai or Singapore), then **Connect Project** with Production ticked. Any variable prefix works.
+3. **Settings → Environment Variables**: add `LOGIN_ID` and `LOGIN_PASSWORD`. Never put the real password in the code, because the repository can be public.
+4. **Deployments → ⋯ → Redeploy.**
 
 ## Changing the password
 
-**Settings → Environment Variables → edit `LOGIN_PASSWORD` → Save → Redeploy.** Everyone who was signed in is signed out.
+**Settings → Environment Variables → edit `LOGIN_PASSWORD` → Save → Redeploy.** Everyone signed in is signed out.
+
+## Checking the server
+
+`/api/read?what=health` shows which database the site uses, how many entries each calendar holds, and the last 25 saves. It never shows the password.
 
 ## Try it on your own computer
 
 ```
 npm install
-copy .env.example .env.local      (Windows)   or   cp .env.example .env.local
+cp .env.example .env.local        (Windows: copy .env.example .env.local)
 ```
 
-Put the login in `.env.local`, delete the `DATABASE_URL` line, then `npm run dev` and open http://localhost:3000.
-It uses a local database folder (`.localdb`), so nothing touches the live site.
+Put the login in `.env.local`, delete the `DATABASE_URL` line, then run `npm run dev` and open http://localhost:3000. This uses a local database folder (`.localdb`), so nothing touches the live site.
 
 ## Looking at the data directly
 
-In Vercel, open the Neon database → SQL editor:
+In Vercel, open the Neon database and use the SQL editor:
 
 ```sql
-SELECT * FROM faculty ORDER BY sort_order;
-SELECT day, emp_id, slot, body, updated_by, updated_at FROM day_entries ORDER BY day DESC, emp_id, slot;
-SELECT * FROM events ORDER BY start_date;
+SELECT cal, start_date, end_date, category, title, audience FROM events ORDER BY cal, start_date;
 SELECT * FROM proofs ORDER BY added_at DESC;
+SELECT * FROM audit ORDER BY id DESC LIMIT 50;
 ```
-
-## If something goes wrong
-
-- **Error on opening** — the database is not connected, or you did not redeploy. Check that `DATABASE_URL` is listed exactly with that name.
-- **"LOGIN_ID and LOGIN_PASSWORD are not set"** — add them in step 4 and redeploy.
-- **"Not saved" under a name** — the connection dropped. Type in the box again and it retries. Vercel → **Logs** shows the reason for any red `/api/save` line.
 
 ## What is in here
 
 ```
-api/_db.js        database connection, tables, holiday list
-api/_auth.js      login check and sign-in token
-api/read.js       GET  /api/read   — calendar, a day's slots, week counts, Excel range
-api/save.js       POST /api/save   — every change
-public/index.html the whole site
-public/logo.jpg   the Vignan's Online logo
-dev/server.mjs    local preview only (not used on Vercel)
-
-Deployed for CDOE
+api/_db.js          database connection, tables, upgrades
+api/_auth.js        login check and sign-in token
+api/read.js         GET  /api/read   (both calendars, health check)
+api/save.js         POST /api/save   (every change)
+public/index.html   the site
+public/importer.js  reads the calendar workbooks
+public/logo.jpg     the Vignan's Online logo
+dev/server.mjs      local preview only, not used on Vercel
 ```

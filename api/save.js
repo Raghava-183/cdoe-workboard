@@ -1,10 +1,14 @@
-import { q, ensure, readCalendar, readFaculty, readBody, logSave } from './_db.js';
+import { q, ensure, readCalendar, readBody, logSave } from './_db.js';
 import { login, verify } from './_auth.js';
 
 const CATS = ['holiday', 'observance', 'semester', 'assessment', 'techtalk', 'exam', 'admission',
-  'orientation', 'counselling', 'webinar', 'workshop', 'fdp', 'meeting', 'content', 'event'];
+  'orientation', 'counselling', 'webinar', 'workshop', 'fdp', 'meeting', 'content', 'event',
+  'registration', 'result', 'vacation', 'academic'];
+const CALS = ['activity', 'coe'];
+const calOf = v => (CALS.includes(v) ? v : 'activity');
 const isDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 const txt = (v, n) => String(v ?? '').trim().slice(0, n);
+const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 
 class Bad extends Error { constructor(m) { super(m); this.code = 400; } }
 
@@ -35,11 +39,11 @@ export default async function handler(req, res) {
     if (b.action === 'check') { res.status(200).json({ ok: true, who }); return; }
 
     await ensure();
-    const target = String(b.id || b.emp_id || b.proof_id || b.date || '');
+    const target = String(b.id || b.proof_id || b.cal || '');
     let out;
     try { out = await run(b, who); }
     catch (e) { await logSave(who, b.action, target, false, e.message); throw e; }
-    if (b.action !== 'setSlot') await logSave(who, b.action, target, true, b.url || b.title || b.status || b.category || '');
+    await logSave(who, b.action, target, true, b.url || b.title || b.status || b.category || '');
     res.status(200).json(Object.assign({ ok: true }, out));
   } catch (err) {
     if (err.code !== 400) console.error('save:', err);
@@ -50,68 +54,7 @@ export default async function handler(req, res) {
 async function run(b, who) {
   switch (b.action) {
 
-    /* ---------- Day Tracker ---------- */
-
-    case 'setSlot': {
-      if (!isDay(b.date)) throw new Bad('A valid date is needed');
-      const slot = Number(b.slot);
-      if (![1, 2, 3, 4].includes(slot)) throw new Bad('Slot must be 1 to 4');
-      const emp = txt(b.emp_id, 40), body = txt(b.body, 2000);
-      const [f] = await q`SELECT 1 FROM faculty WHERE emp_id = ${emp}`;
-      if (!f) throw new Bad('That faculty member is not in the list');
-      const [r] = await q`
-        INSERT INTO day_entries (day, emp_id, slot, body, updated_by, updated_at)
-        VALUES (${b.date}::date, ${emp}, ${slot}, ${body}, ${who}, now())
-        ON CONFLICT (day, emp_id, slot) DO UPDATE
-          SET body = EXCLUDED.body, updated_by = EXCLUDED.updated_by, updated_at = now()
-        RETURNING to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon, HH12:MI AM') AS at`;
-      return { at: r.at, by: who };
-    }
-
-    case 'setFaculty': {
-      const rows = (Array.isArray(b.rows) ? b.rows : [])
-        .map(r => ({ id: txt(r.emp_id, 40), name: txt(r.name, 120), des: txt(r.designation, 120) }))
-        .filter(r => r.id && r.name);
-      if (!rows.length) throw new Bad('No faculty rows with both a name and an employee ID');
-      const ids = rows.map(r => r.id);
-      if (new Set(ids).size !== ids.length) throw new Bad('The same employee ID appears twice in the file');
-      await q`
-        INSERT INTO faculty (emp_id, name, designation, sort_order, active, updated_at)
-        SELECT a, n, d, o, true, now()
-        FROM unnest(${ids}::text[], ${rows.map(r => r.name)}::text[],
-                    ${rows.map(r => r.des)}::text[], ${rows.map((_, i) => i + 1)}::int[]) AS x(a, n, d, o)
-        ON CONFLICT (emp_id) DO UPDATE
-          SET name = EXCLUDED.name, designation = EXCLUDED.designation,
-              sort_order = EXCLUDED.sort_order, active = true, updated_at = now()`;
-      if (b.removeMissing) {
-        await q`UPDATE faculty SET active = false, updated_at = now() WHERE NOT (emp_id = ANY(${ids}::text[]))`;
-      }
-      return { faculty: await readFaculty(true) };
-    }
-
-    case 'saveFaculty': {
-      const id = txt(b.emp_id, 40), name = txt(b.name, 120), des = txt(b.designation, 120);
-      if (!id || !name) throw new Bad('Name and employee ID are both needed');
-      if (b.isNew) {
-        const [x] = await q`SELECT active FROM faculty WHERE emp_id = ${id}`;
-        if (x && x.active) throw new Bad('Employee ID ' + id + ' is already in the list');
-      }
-      await q`
-        INSERT INTO faculty (emp_id, name, designation, sort_order, active)
-        VALUES (${id}, ${name}, ${des}, (SELECT coalesce(max(sort_order), 0) + 1 FROM faculty), true)
-        ON CONFLICT (emp_id) DO UPDATE
-          SET name = EXCLUDED.name, designation = EXCLUDED.designation, active = true, updated_at = now()`;
-      return { faculty: await readFaculty(true) };
-    }
-
-    case 'removeFaculty':
-    case 'restoreFaculty': {
-      const on = b.action === 'restoreFaculty';
-      await q`UPDATE faculty SET active = ${on}, updated_at = now() WHERE emp_id = ${txt(b.emp_id, 40)}`;
-      return { faculty: await readFaculty(true) };
-    }
-
-    /* ---------- Activity Calendar ---------- */
+    /* ---------- Both calendars ---------- */
 
     case 'saveEvent': {
       const e = cleanEvent(b);
@@ -123,29 +66,55 @@ async function run(b, who) {
           WHERE id = ${String(b.id)}::bigint`;
       } else {
         await q`
-          INSERT INTO events (start_date, end_date, category, title, audience, updated_by)
-          VALUES (${e.start}::date, ${e.end}::date, ${e.category}, ${e.title}, ${e.audience}, ${who})`;
+          INSERT INTO events (cal, start_date, end_date, category, title, audience, updated_by)
+          VALUES (${calOf(b.cal)}, ${e.start}::date, ${e.end}::date, ${e.category}, ${e.title}, ${e.audience}, ${who})`;
       }
       return readCalendar();
     }
 
     case 'importEvents': {
       const rows = (Array.isArray(b.rows) ? b.rows : []).map(cleanEvent);
-      if (!rows.length) throw new Bad('No activities to add');
-      // Rows already on the calendar (same dates, same title) are skipped,
-      // so uploading the same file twice does not create copies.
-      const added = await q`
-        INSERT INTO events (start_date, end_date, category, title, audience, updated_by)
-        SELECT DISTINCT ON (s, e, lower(t)) s::date, e::date, c, t, a, ${who}
-        FROM unnest(${rows.map(r => r.start)}::text[], ${rows.map(r => r.end)}::text[],
-                    ${rows.map(r => r.category)}::text[], ${rows.map(r => r.title)}::text[],
-                    ${rows.map(r => r.audience)}::text[]) AS x(s, e, c, t, a)
-        WHERE NOT EXISTS (
-          SELECT 1 FROM events ev
-          WHERE ev.start_date = x.s::date AND ev.end_date = x.e::date AND lower(ev.title) = lower(x.t))
-        ORDER BY s, e, lower(t)
-        RETURNING id`;
-      return Object.assign({ added: added.length, skipped: rows.length - added.length }, await readCalendar());
+      if (!rows.length) throw new Bad('No entries to add');
+      const cal = calOf(b.cal);
+      // Titles are matched ignoring case, spaces and punctuation, so "Meeting - All" and
+      // "Meeting – All" count as the same entry and importing twice adds nothing.
+      const key = (s, e, t) => s + '|' + e + '|' + norm(t);
+      const existing = await q`
+        SELECT id::text AS id, to_char(start_date, 'YYYY-MM-DD') AS s, to_char(end_date, 'YYYY-MM-DD') AS e, title,
+               notes, status, (SELECT count(*) FROM proofs p WHERE p.event_id = events.id)::int AS links
+        FROM events WHERE cal = ${cal}`;
+      const have = new Map(existing.map(r => [key(r.s, r.e, r.title), r]));
+      const seen = new Set(), fresh = [];
+      for (const r of rows) {
+        const k = key(r.start, r.end, r.title);
+        if (seen.has(k)) continue; seen.add(k);
+        if (!have.has(k)) fresh.push(r);
+      }
+      let removed = 0, kept = 0;
+      if (b.replace) {
+        // Replace: whatever is not in the file goes, unless someone attached proof,
+        // wrote notes or marked it completed.
+        const drop = [];
+        for (const r of existing) {
+          if (seen.has(key(r.s, r.e, r.title))) continue;
+          if (r.links > 0 || (r.notes || '').trim() || r.status === 'completed') { kept++; continue; }
+          drop.push(r.id);
+        }
+        if (drop.length) {
+          await q`DELETE FROM events WHERE id = ANY(${drop}::bigint[])`;
+          await q`DELETE FROM proofs WHERE event_id = ANY(${drop}::bigint[])`;
+        }
+        removed = drop.length;
+      }
+      if (fresh.length) {
+        await q`
+          INSERT INTO events (cal, start_date, end_date, category, title, audience, updated_by)
+          SELECT ${cal}, s::date, e::date, c, t, a, ${who}
+          FROM unnest(${fresh.map(r => r.start)}::text[], ${fresh.map(r => r.end)}::text[],
+                      ${fresh.map(r => r.category)}::text[], ${fresh.map(r => r.title)}::text[],
+                      ${fresh.map(r => r.audience)}::text[]) AS x(s, e, c, t, a)`;
+      }
+      return Object.assign({ added: fresh.length, skipped: rows.length - fresh.length, removed, kept }, await readCalendar());
     }
 
     case 'setStatus': {
@@ -177,14 +146,14 @@ async function run(b, who) {
     case 'deleteEvents': {
       if (!isDay(b.from) || !isDay(b.to) || b.to < b.from) throw new Bad('Choose a valid date range');
       if (b.confirm !== 'DELETE') throw new Bad('Type DELETE to confirm');
-      const keep = b.keepHolidays !== false;
+      const keep = b.keepHolidays !== false, cal = calOf(b.cal);
       const gone = keep
         ? await q`DELETE FROM events
-                  WHERE start_date <= ${b.to}::date AND end_date >= ${b.from}::date
+                  WHERE cal = ${cal} AND start_date <= ${b.to}::date AND end_date >= ${b.from}::date
                     AND category NOT IN ('holiday', 'observance')
                   RETURNING id`
         : await q`DELETE FROM events
-                  WHERE start_date <= ${b.to}::date AND end_date >= ${b.from}::date
+                  WHERE cal = ${cal} AND start_date <= ${b.to}::date AND end_date >= ${b.from}::date
                   RETURNING id`;
       await q`DELETE FROM proofs WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id = proofs.event_id)`;
       return Object.assign({ deleted: gone.length }, await readCalendar());

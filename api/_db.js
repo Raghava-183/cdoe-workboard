@@ -59,9 +59,8 @@ async function getSql() {
 export const q = async (strings, ...values) => (await getSql())(strings, ...values);
 
 /*
-  University holidays for July–December 2026, taken from the department activity
-  calendar. Loaded once, the first time the database is empty. Edit or cancel
-  them from the site if CDOE follows a different list.
+  University holidays for July–December 2026, loaded into the Activity Calendar
+  once, the first time the database is empty.
 */
 const SEED_EVENTS = [
   ['2026-08-15', '2026-08-15', 'holiday', 'Independence Day'],
@@ -81,27 +80,6 @@ let ready = false;
 
 export async function ensure() {
   if (ready) return;
-
-  await q`
-    CREATE TABLE IF NOT EXISTS faculty (
-      emp_id      TEXT PRIMARY KEY,
-      name        TEXT NOT NULL,
-      designation TEXT NOT NULL DEFAULT '',
-      sort_order  INT  NOT NULL DEFAULT 0,
-      active      BOOLEAN NOT NULL DEFAULT true,
-      updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-    )`;
-
-  await q`
-    CREATE TABLE IF NOT EXISTS day_entries (
-      day        DATE NOT NULL,
-      emp_id     TEXT NOT NULL,
-      slot       SMALLINT NOT NULL CHECK (slot BETWEEN 1 AND 4),
-      body       TEXT NOT NULL DEFAULT '',
-      updated_by TEXT NOT NULL DEFAULT '',
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-      PRIMARY KEY (day, emp_id, slot)
-    )`;
 
   await q`
     CREATE TABLE IF NOT EXISTS events (
@@ -129,7 +107,15 @@ export async function ensure() {
     )`;
 
   await q`CREATE INDEX IF NOT EXISTS proofs_event ON proofs (event_id)`;
-  await q`CREATE INDEX IF NOT EXISTS entries_emp ON day_entries (emp_id, day)`;
+
+  /* Two calendars share one table: 'activity' (Activity Calendar) and 'coe' (Calendar of Events).
+     Everything that existed before the split belongs to the Activity Calendar. */
+  await q`ALTER TABLE events ADD COLUMN IF NOT EXISTS cal TEXT NOT NULL DEFAULT 'activity'`;
+  await q`CREATE INDEX IF NOT EXISTS events_cal ON events (cal, start_date)`;
+
+  /* The Day Tracker was removed (Oct 2026). Its faculty list and slot entries are deleted. */
+  await q`DROP TABLE IF EXISTS day_entries`;
+  await q`DROP TABLE IF EXISTS faculty`;
 
   /* The holidays are loaded once, ever. After that, deleting them from the
      site keeps them deleted. */
@@ -170,7 +156,7 @@ export async function readCalendar() {
     SELECT id::text AS id,
            to_char(start_date, 'YYYY-MM-DD') AS start,
            to_char(end_date,   'YYYY-MM-DD') AS "end",
-           category, title, audience, status, notes, cancelled,
+           cal, category, title, audience, status, notes, cancelled,
            updated_by AS by
     FROM events ORDER BY start_date, id`;
   const proofs = await q`
@@ -178,43 +164,6 @@ export async function readCalendar() {
            to_char(added_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS added
     FROM proofs ORDER BY added_at`;
   return { events, proofs };
-}
-
-export async function readFaculty(includeInactive = false) {
-  return includeInactive
-    ? q`SELECT emp_id, name, designation, active FROM faculty ORDER BY sort_order, name`
-    : q`SELECT emp_id, name, designation, active FROM faculty WHERE active ORDER BY sort_order, name`;
-}
-
-export async function readDay(day) {
-  const faculty = await readFaculty();
-  const entries = await q`
-    SELECT emp_id, slot, body, updated_by AS by,
-           to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon, HH12:MI AM') AS at
-    FROM day_entries WHERE day = ${day}::date AND body <> ''`;
-  return { day, faculty, entries };
-}
-
-/* How many of the four slots each faculty member filled, per day. */
-export async function readCounts(from, to) {
-  const faculty = await readFaculty();
-  const counts = await q`
-    SELECT to_char(day, 'YYYY-MM-DD') AS day, emp_id, count(*)::int AS n
-    FROM day_entries
-    WHERE day BETWEEN ${from}::date AND ${to}::date AND body <> ''
-    GROUP BY day, emp_id`;
-  return { from, to, faculty, counts };
-}
-
-/* Every entry in a range — used for the Excel download. */
-export async function readRange(from, to) {
-  const faculty = await readFaculty(true);
-  const entries = await q`
-    SELECT to_char(day, 'YYYY-MM-DD') AS day, emp_id, slot, body
-    FROM day_entries
-    WHERE day BETWEEN ${from}::date AND ${to}::date AND body <> ''
-    ORDER BY day, emp_id, slot`;
-  return { from, to, faculty, entries };
 }
 
 export function readBody(req) {
