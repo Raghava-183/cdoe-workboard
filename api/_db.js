@@ -76,6 +76,24 @@ const SEED_EVENTS = [
   ['2026-12-25', '2026-12-25', 'holiday', 'Christmas']
 ];
 
+
+/*
+  Batches Status: how many learners each programme admitted in each batch,
+  how many have graduated, and a remarks line the team fills in.
+  Admitted counts are the department's intake figures, loaded once.
+*/
+const PROGRAMMES = ['BBA', 'MBA (General)', 'MBA (Finance)', 'MBA HRM', 'BCA', 'MCA'];
+const BATCHES = ['Jan-22', 'Jul-22', 'Jan-23', 'Jul-23', 'Jan-24', 'Jul-24', 'Jan-25', 'Jul-25', 'Jan-26', 'Jul-26'];
+/* null means the programme took no intake in that batch. */
+const ADMITTED = {
+  'BBA':           [5, 303, 20, 54, 33, 73, 10, 37, 42, 98],
+  'MBA (General)': [23, 948, 50, 490, 282, 587, 172, 381, 516, 1010],
+  'MBA (Finance)': [21, 148, 183, 83, 44, 87, 25, 54, 35, 103],
+  'MBA HRM':       [17, 166, 60, 113, 75, 108, 20, 38, 37, 88],
+  'BCA':           [null, null, 31, 98, 35, 93, 8, 37, 41, 74],
+  'MCA':           [null, null, null, 502, 154, 350, 53, 169, 139, 407]
+};
+
 let ready = false;
 
 export async function ensure() {
@@ -134,6 +152,34 @@ export async function ensure() {
     await q`INSERT INTO meta (k, v) VALUES ('holidays_seeded', 'yes') ON CONFLICT (k) DO NOTHING`;
   }
 
+  await q`
+    CREATE TABLE IF NOT EXISTS batch_status (
+      batch      TEXT NOT NULL,
+      programme  TEXT NOT NULL,
+      sort_order INT  NOT NULL DEFAULT 0,
+      admitted   INT,
+      graduated  INT  NOT NULL DEFAULT 0,
+      remarks    TEXT NOT NULL DEFAULT '',
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (batch, programme)
+    )`;
+
+  /* The intake figures are loaded once, ever, so later edits are never overwritten. */
+  const [bseeded] = await q`SELECT 1 AS x FROM meta WHERE k = 'batches_seeded'`;
+  if (!bseeded) {
+    const b = [], p = [], o = [], n = [];
+    PROGRAMMES.forEach((prog, pi) => BATCHES.forEach((batch, bi) => {
+      b.push(batch); p.push(prog); o.push(pi + 1); n.push(ADMITTED[prog][bi]);
+    }));
+    await q`
+      INSERT INTO batch_status (batch, programme, sort_order, admitted, updated_by)
+      SELECT x.b, x.p, x.o, x.n, 'Department intake sheet'
+      FROM unnest(${b}::text[], ${p}::text[], ${o}::int[], ${n}::int[]) AS x(b, p, o, n)
+      ON CONFLICT (batch, programme) DO NOTHING`;
+    await q`INSERT INTO meta (k, v) VALUES ('batches_seeded', 'yes') ON CONFLICT (k) DO NOTHING`;
+  }
+
   /* Every save attempt, kept so problems can be traced. */
   await q`
     CREATE TABLE IF NOT EXISTS audit (
@@ -164,6 +210,14 @@ export async function readCalendar() {
            to_char(added_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS added
     FROM proofs ORDER BY added_at`;
   return { events, proofs };
+}
+
+export async function readBatches() {
+  const rows = await q`
+    SELECT batch, programme, sort_order, admitted, graduated, remarks, updated_by AS by,
+           to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS at
+    FROM batch_status ORDER BY sort_order, programme`;
+  return { batches: rows };
 }
 
 export function readBody(req) {

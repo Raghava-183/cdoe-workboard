@@ -277,6 +277,48 @@ body.fs .mweek{flex:1 0 auto;min-height:130px}
 body.fs .mday{min-height:0}
 body.fs .legend{margin-top:.5rem}
 
+/* ── Batches Status ──────────────────────────────────────────── */
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3);margin-bottom:var(--s4)}
+.tiles .meter{margin:0}
+.rtable table.mx th[scope="row"],.rtable table.bst th[scope="row"]{font-weight:700;text-align:left;white-space:nowrap}
+.rtable table.mx thead th,.rtable table.bst thead th{white-space:nowrap}
+.rtable table.mx td,.rtable table.bst td{vertical-align:middle}
+.rtable td.nums{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rtable td.nums b{font-weight:700;font-size:.95rem}
+.rtable td.nums small{display:block;color:var(--ok);font-size:.72rem;font-weight:650;margin-top:.1rem}
+.rtable td.nums.tot{background:var(--rule-2)}
+.rtable td.none{text-align:right;color:#CFC5C6}
+.rtable tfoot th,.rtable tfoot td{background:var(--rule-2);font-weight:750;border-bottom:0}
+.rtable .lnk{appearance:none;border:0;background:transparent;color:var(--red-deep);font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
+.rtable .lnk:hover{color:var(--red)}
+
+table.bst td.n,table.bst th.n{text-align:right;width:7.5rem;font-variant-numeric:tabular-nums}
+table.bst td.n .left{font-weight:750}
+table.bst .nin{width:5.5rem;text-align:right;padding:.35rem .5rem;font-variant-numeric:tabular-nums}
+table.bst .nin:disabled{background:var(--rule-2);color:var(--ink-3)}
+table.bst td.pb,table.bst th.pb{width:9rem}
+table.bst td.pb{white-space:nowrap}
+table.bst .track{display:inline-block;width:5.5rem;height:7px;background:var(--rule-2);border-radius:4px;overflow:hidden;vertical-align:middle}
+table.bst .track i{display:block;height:100%;background:var(--ok);border-radius:4px}
+table.bst .pc{font-size:.78rem;color:var(--ink-2);margin-left:.45rem;font-variant-numeric:tabular-nums}
+table.bst .rin{width:100%;padding:.35rem .5rem}
+table.bst td.rm,table.bst th.rm{min-width:16rem}
+table.bst td.st{font-size:.72rem;color:var(--ink-3);white-space:nowrap;width:9rem}
+table.bst td.st .err{color:var(--red-deep);font-weight:650;white-space:normal;display:inline-block}
+table.bst tbody tr:hover td{background:#FFFCFC}
+@media (max-width:900px){
+  .tiles{grid-template-columns:1fr}
+  table.bst td.pb,table.bst th.pb,table.bst td.st,table.bst th.st{display:none}
+  table.bst td.n,table.bst th.n{width:5.5rem}
+}
+@media print{
+  .tiles{display:grid!important;grid-template-columns:repeat(3,1fr)}
+  table.bst td.pb,table.bst th.pb,table.bst td.st,table.bst th.st{display:none}
+  table.bst .nin,table.bst .rin{border:0;padding:0;background:transparent}
+  .rtable .lnk{color:var(--ink);text-decoration:none}
+  #view > p.hint,#view > .notice{display:none}
+}
+
 /* ── Smaller screens ─────────────────────────────────────────── */
 @media (max-width:1100px){ .below{grid-template-columns:1fr 1fr} }
 @media (max-width:900px){
@@ -348,6 +390,7 @@ body.fs .legend{margin-top:.5rem}
   <div class="band-in" role="tablist">
     <button class="tab" role="tab" id="tab-activity" data-tab="activity" aria-selected="false"><b>Activity Calendar</b><small>Webinars, Tech Talks, meetings and their proof</small></button>
     <button class="tab" role="tab" id="tab-coe" data-tab="coe" aria-selected="false"><b>Calendar of Events</b><small>Semesters, assessments, examinations and holidays</small></button>
+    <button class="tab" role="tab" id="tab-batches" data-tab="batches" aria-selected="false"><b>Batches Status</b><small>Learners admitted, graduated and remarks</small></button>
     <span class="band-date" id="bandDate"></span>
   </div>
 </nav>
@@ -357,7 +400,7 @@ body.fs .legend{margin-top:.5rem}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span>Version 26 Oct 2026</span>
+    <span>Version 31 Oct 2026</span>
   </div>
 </footer>
 
@@ -448,6 +491,8 @@ const ICON = {
   bin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"/></svg>',
   full:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+  down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  cap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="34" height="34"><path d="M12 4 2 9l10 5 10-5-10-5Z"/><path d="M6 11.5V17c0 1.7 2.7 3 6 3s6-1.3 6-3v-5.5"/></svg>',
   cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="34" height="34"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/></svg>'
 };
 
@@ -463,8 +508,8 @@ function toast(msg, bad){
 /* ═══════════════════════════════════════════════════════════════
    State and server
    ═══════════════════════════════════════════════════════════════ */
-const state = { cal: "activity", month: null, view: "month", filter: "all", q: "", showCancelled: false,
-                session: null, events: [], proofs: [], loadError: null };
+const state = { tab: "activity", cal: "activity", month: null, view: "month", filter: "all", q: "", showCancelled: false,
+                bsRows: [], bsBatch: "all", session: null, events: [], proofs: [], loadError: null };
 try { const s = JSON.parse(localStorage.getItem("cdoe.session") || "null"); if (s && s.token && s.exp > Date.now()) state.session = s; } catch {}
 
 async function get(what, params = {}){
@@ -562,22 +607,30 @@ function signOut(quiet){
    ═══════════════════════════════════════════════════════════════ */
 function readHash(){
   let [tab, arg, extra] = location.hash.replace(/^#\/?/, "").split("/");
+  if (tab === "batches") {
+    state.tab = "batches";
+    const want = arg ? decodeURIComponent(arg) : "all";
+    state.bsBatch = (want === "all" || state.bsRows.some(r => r.batch === want)) ? want : "all";
+    return;
+  }
   if (!CALS[tab]) tab = "activity";                       // older #calendar and #tracker links land here
-  state.cal = tab;
+  state.tab = state.cal = tab;
   const [lo, hi] = bounds(tab), now = todayISO().slice(0, 7);
   let m = /^\d{4}-\d{2}$/.test(arg || "") ? arg : (now >= lo && now <= hi ? now : lo);
   if (m < lo) m = lo; if (m > hi) m = hi;
   state.month = m;
   state.view = extra === "list" ? "list" : "month";
 }
-const hashFor = (cal = state.cal, month = state.month, view = state.view) => "#" + cal + "/" + month + (view === "list" ? "/list" : "");
+const hashFor = (cal = state.cal, month = state.month, view = state.view) =>
+  state.tab === "batches" ? "#batches/" + encodeURIComponent(state.bsBatch)
+                          : "#" + cal + "/" + month + (view === "list" ? "/list" : "");
 function go(h){ if (location.hash !== h) location.hash = h; else route(); }
 function route(){
   readHash();
   const want = hashFor();
   if (location.hash !== want) history.replaceState(null, "", want);
-  $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === state.cal)));
-  document.title = C().name + " — CDOE Workboard";
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
+  document.title = (state.tab === "batches" ? "Batches Status" : C().name) + " — CDOE Workboard";
   render();
 }
 
@@ -595,9 +648,12 @@ function visible(){
 function render(){
   const v = $("#view");
   if (state.loadError) { v.innerHTML = `<div class="notice">${esc(state.loadError)}</div>`; return; }
-  if (!state.month) return;
-  v.innerHTML = head() + strip() + toolbar() + (evOf().length ? "" : welcome()) +
-    (state.view === "list" ? drawList() : `<div class="gridwrap">${drawMonth()}</div>` + below());
+  if (state.tab === "batches") v.innerHTML = batchesView();
+  else {
+    if (!state.month) return;
+    v.innerHTML = head() + strip() + toolbar() + (evOf().length ? "" : welcome()) +
+      (state.view === "list" ? drawList() : `<div class="gridwrap">${drawMonth()}</div>` + below());
+  }
   const cur = $(".strip [aria-current='true']"), s = $(".strip");
   if (cur && s && s.scrollWidth > s.clientWidth) s.scrollLeft = cur.offsetLeft - s.clientWidth / 2 + cur.clientWidth / 2;
 }
@@ -1113,6 +1169,228 @@ document.addEventListener("fullscreenchange", fsChanged);
 document.addEventListener("webkitfullscreenchange", fsChanged);
 
 /* ═══════════════════════════════════════════════════════════════
+   Batches Status — learners admitted, graduated and remarks
+   ═══════════════════════════════════════════════════════════════ */
+const BS_RX = /^\s*([A-Za-z]{3,})[-\s/]+(\d{2,4})\s*$/;
+const bsOrder = b => {
+  const m = String(b).match(BS_RX); if (!m) return 1e9;
+  const mi = MON.findIndex(x => x.slice(0, 3).toLowerCase() === m[1].slice(0, 3).toLowerCase());
+  const y = Number(m[2]); return (y < 100 ? 2000 + y : y) * 12 + (mi < 0 ? 0 : mi);
+};
+const bsLabel = b => {
+  const m = String(b).match(BS_RX); if (!m) return b;
+  const mi = MON.findIndex(x => x.slice(0, 3).toLowerCase() === m[1].slice(0, 3).toLowerCase());
+  const y = Number(m[2]); return (mi < 0 ? m[1] : MON[mi]) + " " + (y < 100 ? 2000 + y : y);
+};
+const bsBatches = () => [...new Set(state.bsRows.map(r => r.batch))].sort((a, b) => bsOrder(a) - bsOrder(b) || a.localeCompare(b));
+function bsProgs(){
+  const first = new Map();
+  state.bsRows.forEach(r => { if (!first.has(r.programme)) first.set(r.programme, r.sort_order); });
+  return [...first.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(e => e[0]);
+}
+const bsAt = (batch, prog) => state.bsRows.find(r => r.batch === batch && r.programme === prog);
+const bsOf = batch => state.bsRows.filter(r => r.batch === batch);
+const bsSum = rows => rows.reduce((a, r) => ({ adm: a.adm + (r.admitted || 0), grad: a.grad + (r.graduated || 0) }), { adm: 0, grad: 0 });
+const bsPct = (g, a) => a > 0 ? Math.round(g / a * 100) : 0;
+const num = n => Number(n || 0).toLocaleString("en-IN");
+
+function batchesView(){
+  if (!state.bsRows.length) {
+    return bsHead() + `<section class="welcome"><div class="ico">${ICON.cap}</div><div>
+      <h3>No batches yet</h3><p>The intake figures load by themselves the first time the site starts after this update. If this stays empty, open <b>/api/read?what=health</b> and send me what it says.</p>
+      ${canEdit() ? `<button class="btn" id="bsAdd">${ICON.plus}Add a batch by hand</button>` : ""}</div></section>`;
+  }
+  return bsHead() + bsStrip() + bsBar() + (state.bsBatch === "all" ? bsMatrix() : bsDetail(state.bsBatch));
+}
+
+function bsHead(){
+  const all = state.bsBatch === "all";
+  return `<div class="calhead">
+    <img class="fslogo" src="/logo.jpg" alt="Vignan's Online">
+    ${all ? "" : `<button class="iconbtn" data-bs="all" aria-label="Back to all batches">‹</button>`}
+    <h2>${all ? `Batches <span>Status</span>` : `${esc(bsLabel(state.bsBatch))} <span>batch</span>`}</h2>
+    <span class="grow"></span>
+    <button class="btn line" id="bsPrint">${ICON.print}Print</button>
+    <button class="btn line" id="bsXl">${ICON.down}Download Excel</button>
+  </div>`;
+}
+
+function bsStrip(){
+  const items = bsBatches().map(b => {
+    const t = bsSum(bsOf(b));
+    return { b, adm: t.adm, grad: t.grad, pct: bsPct(t.grad, t.adm) };
+  });
+  return `<nav class="strip" aria-label="Batches">
+    <button data-bs="all" ${state.bsBatch === "all" ? 'aria-current="true"' : ""} aria-label="All batches together">
+      <span class="yr has">All</span><span class="mn">Batches<small>${items.length}</small></span>
+      <span class="bar"><i style="width:100%"></i></span></button>
+    ${items.map(i => `<button data-bs="${esc(i.b)}" ${state.bsBatch === i.b ? 'aria-current="true"' : ""}
+        aria-label="${esc(bsLabel(i.b))} batch: ${i.adm} learners, ${i.grad} graduated">
+      <span class="yr has">${esc(bsLabel(i.b).split(" ").pop())}</span>
+      <span class="mn">${esc(String(i.b).split(/[-\s/]/)[0])}<small>${num(i.adm)}</small></span>
+      <span class="bar" title="${i.pct}% graduated"><i style="width:${i.pct}%"></i></span></button>`).join("")}
+  </nav>`;
+}
+
+function bsBar(){
+  if (!canEdit()) return "";
+  return `<div class="bar2"><span class="grow"></span>
+    <button class="btn line" id="bsAdd">${ICON.plus}Add a batch</button>
+    ${state.bsBatch === "all" ? "" : `<button class="btn line" id="bsDel">${ICON.bin}Delete ${esc(state.bsBatch)}</button>`}
+  </div>`;
+}
+
+/* Every batch at once, the way the intake sheet reads. */
+function bsMatrix(){
+  const bs = bsBatches(), progs = bsProgs();
+  const grand = bsSum(state.bsRows);
+  const cell = r => {
+    if (!r || r.admitted === null) return `<td class="none">–</td>`;
+    return `<td class="nums"><b>${num(r.admitted)}</b>${r.graduated ? `<small>${num(r.graduated)} out</small>` : ""}</td>`;
+  };
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Batches Status</h2>
+      <p>Learners admitted, and how many have graduated. Printed ${esc(longDate(todayISO()))}.</p></div>
+    <div class="rtable"><table class="mx">
+    <thead><tr><th>Programme</th>${bs.map(b => `<th class="nums"><button class="lnk" data-bs="${esc(b)}">${esc(b)}</button></th>`).join("")}<th class="nums">Total</th></tr></thead>
+    <tbody>${progs.map(p => {
+      const rows = bs.map(b => bsAt(b, p)), t = bsSum(rows.filter(Boolean));
+      return `<tr><th scope="row">${esc(p)}</th>${rows.map(cell).join("")}
+        <td class="nums tot"><b>${num(t.adm)}</b>${t.grad ? `<small>${num(t.grad)} out</small>` : ""}</td></tr>`;
+    }).join("")}</tbody>
+    <tfoot><tr><th scope="row">All programmes</th>
+      ${bs.map(b => { const t = bsSum(bsOf(b));
+        return `<td class="nums"><b>${num(t.adm)}</b>${t.grad ? `<small>${num(t.grad)} out</small>` : ""}</td>`; }).join("")}
+      <td class="nums tot"><b>${num(grand.adm)}</b>${grand.grad ? `<small>${num(grand.grad)} out</small>` : ""}</td></tr></tfoot>
+    </table></div>
+    <p class="hint" style="margin-top:var(--s3)">Choose a batch above, or a batch name in the table, to fill in how many have graduated and add remarks. "out" means graduated.</p>`;
+}
+
+/* One batch: every programme, with the numbers people fill in. */
+function bsDetail(batch){
+  const ed = canEdit(), rows = bsProgs().map(p => bsAt(batch, p)).filter(Boolean);
+  const t = bsSum(rows), notOut = t.adm - t.grad, pct = bsPct(t.grad, t.adm);
+  const line = r => {
+    const none = r.admitted === null, left = none ? 0 : r.admitted - r.graduated, p = bsPct(r.graduated, r.admitted || 0);
+    return `<tr data-prog="${esc(r.programme)}">
+      <th scope="row">${esc(r.programme)}</th>
+      <td class="n">${ed ? `<input type="number" min="0" step="1" class="nin" data-f="admitted" value="${r.admitted === null ? "" : r.admitted}" placeholder="–" aria-label="Learners admitted, ${esc(r.programme)}">`
+        : (none ? `<span class="none">–</span>` : num(r.admitted))}</td>
+      <td class="n">${ed ? `<input type="number" min="0" step="1" class="nin" data-f="graduated" value="${r.graduated || 0}" ${none ? "disabled" : ""} aria-label="Graduated, ${esc(r.programme)}">`
+        : (none ? `<span class="none">–</span>` : num(r.graduated))}</td>
+      <td class="n"><b class="left">${none ? "–" : num(left)}</b></td>
+      <td class="pb"><span class="track" title="${p}% graduated"><i style="width:${p}%"></i></span><span class="pc">${none ? "" : p + "%"}</span></td>
+      <td class="rm">${ed ? `<input type="text" class="rin" data-f="remarks" value="${esc(r.remarks)}" placeholder="Add a note" aria-label="Remarks, ${esc(r.programme)}">`
+        : (r.remarks ? esc(r.remarks) : `<span class="hint">—</span>`)}</td>
+      <td class="st"><span data-state>${r.by && r.by !== "Department intake sheet" ? "Changed by " + esc(r.by) : ""}</span></td>
+    </tr>`;
+  };
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Batches Status — ${esc(bsLabel(batch))} batch</h2>
+      <p>Printed ${esc(longDate(todayISO()))}.</p></div>
+    <div class="tiles">
+      <div class="meter"><div class="big">${num(t.adm)}</div><div class="hint">learners admitted in ${esc(bsLabel(batch))}</div></div>
+      <div class="meter"><div class="big">${num(t.grad)}<span> of ${num(t.adm)}</span></div>
+        <div class="track"><i style="width:${pct}%;background:var(--ok)"></i></div><div class="hint">graduated · ${pct}%</div></div>
+      <div class="meter"><div class="big">${num(notOut)}</div><div class="hint">not graduated yet</div></div>
+    </div>
+    ${ed ? "" : `<div class="notice">You are viewing. <a href="#" id="bsSignLink">Sign in</a> to fill in the numbers and remarks.</div>`}
+    <div class="rtable"><table class="bst">
+      <thead><tr><th>Programme</th><th class="n">Learners</th><th class="n">Graduated</th><th class="n">Not graduated</th><th class="pb">Progress</th><th class="rm">Remarks</th><th class="st"></th></tr></thead>
+      <tbody>${rows.map(line).join("")}</tbody>
+      <tfoot><tr><th scope="row">All programmes</th><td class="n">${num(t.adm)}</td><td class="n">${num(t.grad)}</td><td class="n">${num(notOut)}</td>
+        <td class="pb"><span class="track"><i style="width:${pct}%"></i></span><span class="pc">${pct}%</span></td><td colspan="2"></td></tr></tfoot>
+    </table></div>
+    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a number and it saves by itself. <b>Not graduated</b> is worked out for you. A dash means the programme took no intake in this batch.</p>` : ""}`;
+}
+
+/* ── Saving ─────────────────────────────────────────────────── */
+let bsTimer = null;
+async function bsSave(el){
+  if (!el || !el.isConnected) return;
+  clearTimeout(bsTimer); bsTimer = null;
+  const tr = el.closest("tr"); if (!tr) return;
+  const prog = tr.dataset.prog, field = el.dataset.f, value = el.value;
+  const stamp = m => { const s = $(`tr[data-prog="${CSS.escape(prog)}"] [data-state]`); if (s) { s.textContent = m; s.classList.remove("err"); } };
+  stamp("Saving…");
+  try {
+    const j = await post("setBatchCell", { batch: state.bsBatch, programme: prog, field, value });
+    state.bsRows = j.batches || state.bsRows;
+    if (field !== "remarks") {                       // numbers change the totals, so redraw
+      const a = document.activeElement, ap = a && a.closest ? (a.closest("tr") || {}).dataset : null;
+      const keep = ap && ap.prog ? { prog: ap.prog, f: a.dataset.f } : null;
+      render();
+      if (keep) { const back = $(`tr[data-prog="${CSS.escape(keep.prog)}"] [data-f="${keep.f}"]`); if (back) back.focus(); }
+    }
+    stamp("Saved ✓ " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+  } catch (e) {
+    const s = $(`tr[data-prog="${CSS.escape(prog)}"] [data-state]`);
+    if (s) { s.textContent = e.message; s.classList.add("err"); }
+    toast(e.message, true);
+  }
+}
+
+function bsAddBatch(){
+  const d = $("#dlg"); d.className = ""; delete d.dataset.evid; delete d.dataset.edit;
+  d.innerHTML = `<div class="dh"><div><h3>Add a batch</h3><p>Every programme gets a row. Fill in the learner counts afterwards.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db"><div class="field"><label for="bsName">Batch name</label>
+      <input id="bsName" type="text" placeholder="Jan-27" autocomplete="off">
+      <span class="hint">Write it the way the intake sheet does, such as Jan-27 or Jul-27.</span></div>
+    <p class="hint bad" id="bsErr" hidden></p></div>
+  <div class="df"><button class="btn line" data-close>Cancel</button><button class="btn" id="bsGo">Add the batch</button></div>`;
+  if (!d.open) d.showModal();
+  setTimeout(() => $("#bsName").focus(), 30);
+}
+async function bsDoAdd(){
+  const name = $("#bsName").value.trim(), err = $("#bsErr");
+  if (!name) { err.hidden = false; err.textContent = "Give the batch a name."; return; }
+  $("#bsGo").disabled = true;
+  try {
+    const j = await post("addBatch", { batch: name });
+    state.bsRows = j.batches; state.bsBatch = name;
+    $("#dlg").close(); history.replaceState(null, "", hashFor()); render();
+    toast(name + " added. Fill in the learner counts.");
+  } catch (e) { err.hidden = false; err.textContent = e.message; $("#bsGo").disabled = false; }
+}
+async function bsDelBatch(){
+  const b = state.bsBatch, t = bsSum(bsOf(b));
+  if (!confirm(`Delete the ${bsLabel(b)} batch?\n\nIts ${num(t.adm)} learner counts, graduated numbers and remarks go with it. This cannot be undone.`)) return;
+  try {
+    const j = await post("deleteBatch", { batch: b, confirm: "DELETE" });
+    state.bsRows = j.batches; state.bsBatch = "all";
+    history.replaceState(null, "", hashFor()); render();
+    toast(b + " deleted");
+  } catch (e) { toast(e.message, true); }
+}
+
+function bsExcel(){
+  if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
+  const bs = bsBatches(), progs = bsProgs(), wb = XLSX.utils.book_new();
+  const wide = [["Programme", ...bs, "Total"]];
+  progs.forEach(p => {
+    const rows = bs.map(b => bsAt(b, p));
+    wide.push([p, ...rows.map(r => (!r || r.admitted === null) ? "–" : r.admitted), bsSum(rows.filter(Boolean)).adm]);
+  });
+  wide.push(["All programmes", ...bs.map(b => bsSum(bsOf(b)).adm), bsSum(state.bsRows).adm]);
+  const w1 = XLSX.utils.aoa_to_sheet(wide);
+  w1["!cols"] = [{ wch: 18 }, ...bs.map(() => ({ wch: 9 })), { wch: 10 }];
+  XLSX.utils.book_append_sheet(wb, w1, "Learners");
+
+  const detail = [["Batch", "Programme", "Learners", "Graduated", "Not graduated", "% graduated", "Remarks", "Last changed by"]];
+  bs.forEach(b => progs.forEach(p => {
+    const r = bsAt(b, p); if (!r) return;
+    const none = r.admitted === null;
+    detail.push([b, p, none ? "" : r.admitted, none ? "" : r.graduated, none ? "" : r.admitted - r.graduated,
+      none ? "" : bsPct(r.graduated, r.admitted) / 100, r.remarks, r.by || ""]);
+  }));
+  const w2 = XLSX.utils.aoa_to_sheet(detail);
+  w2["!cols"] = [{ wch: 9 }, { wch: 18 }, { wch: 10 }, { wch: 11 }, { wch: 14 }, { wch: 12 }, { wch: 46 }, { wch: 18 }];
+  w2["!autofilter"] = { ref: "A1:H" + detail.length };
+  for (let i = 2; i <= detail.length; i++) { const c = w2["F" + i]; if (c && typeof c.v === "number") c.z = "0%"; }
+  XLSX.utils.book_append_sheet(wb, w2, "Batch status");
+  XLSX.writeFile(wb, "CDOE-Batches-Status.xlsx");
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Events
    ═══════════════════════════════════════════════════════════════ */
 document.addEventListener("click", async ev => {
@@ -1127,6 +1405,13 @@ document.addEventListener("click", async ev => {
     if (t.dataset.tab !== state.cal) { state.filter = "all"; state.q = ""; }
     go("#" + t.dataset.tab); return;
   }
+  if (t.dataset.bs) { state.tab = "batches"; state.bsBatch = t.dataset.bs; go("#batches/" + encodeURIComponent(t.dataset.bs)); return; }
+  if (t.id === "bsPrint") { window.print(); return; }
+  if (t.id === "bsXl") { bsExcel(); return; }
+  if (t.id === "bsAdd") { bsAddBatch(); return; }
+  if (t.id === "bsGo") { bsDoAdd(); return; }
+  if (t.id === "bsDel") { bsDelBatch(); return; }
+  if (t.id === "bsSignLink") { ev.preventDefault(); openSignIn(); return; }
   if (t.dataset.month) { go(hashFor(state.cal, t.dataset.month, "month")); return; }
   if (t.dataset.view) { go(hashFor(state.cal, state.month, t.dataset.view)); return; }
   if (t.id === "printBtn") { window.print(); return; }
@@ -1173,6 +1458,7 @@ document.addEventListener("input", ev => {
   const t = ev.target;
   if (t.id === "evNotes" && canEdit()) { const id = $("#dlg").dataset.evid; const st = $("#notesState"); if (st) st.textContent = "Typing…"; clearTimeout(notesTimer); notesTimer = setTimeout(() => saveNotes(id), 1000); return; }
   if (t.id === "dConfirm") { countDeleteMany(); return; }
+  if (t.matches(".rin")) { const el = t; clearTimeout(bsTimer); bsTimer = setTimeout(() => bsSave(el), 1200); return; }
   if (t.id === "fQ") {
     state.q = t.value;
     clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
@@ -1184,6 +1470,7 @@ document.addEventListener("change", ev => {
   if (t.id === "fCan") { state.showCancelled = t.checked; render(); return; }
   if (t.id === "dFrom" || t.id === "dTo" || t.id === "dKeep") { countDeleteMany(); return; }
   if (t.id === "pUrl") { attachLink($("#dlg").dataset.evid, { auto:true }); return; }
+  if (t.matches(".nin, .rin")) { bsSave(t); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
 });
 document.addEventListener("paste", ev => {
@@ -1193,6 +1480,8 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Escape" && document.body.classList.contains("fs") && !document.fullscreenElement && !$("#dlg").open) { leaveFs(); return; }
   if (ev.key === "Enter" && (ev.target.id === "pUrl" || ev.target.id === "pLbl")) { ev.preventDefault(); attachLink($("#dlg").dataset.evid); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); return; }
+  if (ev.key === "Enter" && ev.target.id === "bsName") { ev.preventDefault(); bsDoAdd(); return; }
+  if (ev.key === "Enter" && ev.target.matches(".nin, .rin")) { ev.preventDefault(); ev.target.blur(); return; }
   if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && !$("#dlg").open && !$("#dlgSign").open && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && state.view === "month") {
     const b = $(`.calhead [aria-label="${ev.key === "ArrowLeft" ? "Previous" : "Next"} month"]`); if (b && !b.disabled) b.click();
   }
@@ -1215,8 +1504,10 @@ window.addEventListener("hashchange", route);
     fetch("/api/save", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ action:"check", token: state.session.token }) })
       .then(r => { if (r.status === 401) signOut(true); }).catch(() => {});
   }
-  try { applyCalendar(await get("calendar")); state.loadError = null; }
-  catch (e) { state.loadError = e.message; }
+  try {
+    const [c, b] = await Promise.all([get("calendar"), get("batches")]);
+    applyCalendar(c); state.bsRows = b.batches || []; state.loadError = null;
+  } catch (e) { state.loadError = e.message; }
   route();
 })();
 </script>

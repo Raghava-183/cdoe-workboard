@@ -2,10 +2,11 @@
 
 Centre for Distance and Online Education · Vignan's Foundation for Science, Technology & Research
 
-Two calendars, one tab each:
+Three tabs:
 
 - **Activity Calendar**: webinars, Tech Talks, workshops, meetings and other department activities. Each one has a status (planned or completed), notes and Google Drive proof links.
 - **Calendar of Events (COE)**: the academic calendar, covering semester commencements, continuous-assessment windows, end-semester examinations and holidays. Every entry carries its batch (for example *July 2025 – Sem III*), and the cards are coloured by batch.
+- **Batches Status**: how many learners each programme admitted in each batch, how many have graduated, and a remarks line. Opens on a table of every batch; choose one to fill in the numbers.
 
 Both calendars have a month view with a strip of every month, a list view you can print, full-screen mode for a projector, and Import, Add and Delete. Anyone with the link can view. Editing needs the department login. Vercel serves the site and Neon Postgres stores the data.
 
@@ -26,6 +27,26 @@ You see every entry, and can change its type, before anything is saved. Then cho
 
 **Delete calendar** clears one calendar, either in full or for a date range, after you type DELETE. The other calendar is never touched.
 
+## Batches Status
+
+The tab opens on **All batches**: programmes down the side, batches across the top, exactly like the department intake sheet. Choose a batch, above or in the table, to open it.
+
+A batch shows every programme with:
+
+| Column | Where it comes from |
+| ------ | ------------------- |
+| Learners | the intake figure, which you can correct |
+| Graduated | typed in |
+| Not graduated | worked out as Learners − Graduated |
+| Progress | the share who have graduated |
+| Remarks | typed in |
+
+Numbers and remarks save by themselves, and **Saved ✓** appears at the end of the row. A dash means the programme took no intake in that batch; type a learner count to open it up. Graduated can never be more than the learner count, and the site says so rather than saving a wrong figure.
+
+**Add a batch** creates a row for every programme, ready for next January. **Delete *batch*** removes one batch after you confirm. **Download Excel** gives two sheets: the wide intake table, and one row per batch and programme with graduated, not graduated, the percentage and the remarks. **Print** gives the same thing on paper.
+
+The intake figures (8,830 learners across ten batches) load once, the first time the site starts after this update, so later corrections are never overwritten.
+
 ## Everyday use
 
 - **Add one entry**: use **Add activity** or **Add event**, or hover over a day and click **+**.
@@ -41,6 +62,7 @@ Commit and push to GitHub. Vercel redeploys by itself. Database changes run on t
 
 - Activities that existed before the COE was added stay on the Activity Calendar.
 - The Day Tracker was removed in October 2026. Its `faculty` and `day_entries` tables are deleted.
+- The Batches Status intake figures are added on the first visit after that tab arrived.
 
 ## First-time setup (new copy of the site)
 
@@ -73,6 +95,7 @@ In Vercel, open the Neon database and use the SQL editor:
 ```sql
 SELECT cal, start_date, end_date, category, title, audience FROM events ORDER BY cal, start_date;
 SELECT * FROM proofs ORDER BY added_at DESC;
+SELECT batch, programme, admitted, graduated, remarks FROM batch_status ORDER BY sort_order, batch;
 SELECT * FROM audit ORDER BY id DESC LIMIT 50;
 ```
 
@@ -81,7 +104,7 @@ SELECT * FROM audit ORDER BY id DESC LIMIT 50;
 ```
 api/_db.js          database connection, tables, upgrades
 api/_auth.js        login check and sign-in token
-api/read.js         GET  /api/read   (both calendars, health check)
+api/read.js         GET  /api/read   (calendars, batches, health check)
 api/save.js         POST /api/save   (every change)
 public/index.html   the site
 public/importer.js  reads the calendar workbooks

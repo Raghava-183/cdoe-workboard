@@ -1,4 +1,4 @@
-import { q, ensure, readCalendar, readBody, logSave } from './_db.js';
+import { q, ensure, readCalendar, readBatches, readBody, logSave } from './_db.js';
 import { login, verify } from './_auth.js';
 
 const CATS = ['holiday', 'observance', 'semester', 'assessment', 'techtalk', 'exam', 'admission',
@@ -157,6 +157,55 @@ async function run(b, who) {
                   RETURNING id`;
       await q`DELETE FROM proofs WHERE NOT EXISTS (SELECT 1 FROM events e WHERE e.id = proofs.event_id)`;
       return Object.assign({ deleted: gone.length }, await readCalendar());
+    }
+
+    /* ---------- Batches Status ---------- */
+
+    case 'setBatchCell': {
+      const batch = txt(b.batch, 40), prog = txt(b.programme, 80);
+      if (!batch || !prog) throw new Bad('Unknown batch or programme');
+      const [row] = await q`SELECT admitted, graduated FROM batch_status WHERE batch = ${batch} AND programme = ${prog}`;
+      if (!row) throw new Bad('That batch and programme are not in the list');
+      const num = v => {
+        if (v === '' || v === null || v === undefined) return null;
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0 || n > 1000000) throw new Bad('Enter a whole number of learners, or leave it empty');
+        return Math.round(n);
+      };
+      if (b.field === 'admitted') {
+        const v = num(b.value);
+        if (v !== null && v < row.graduated) throw new Bad(`There are already ${row.graduated} graduated in this programme, so the learner count cannot be less than that.`);
+        await q`UPDATE batch_status SET admitted = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+      } else if (b.field === 'graduated') {
+        const v = num(b.value) ?? 0;
+        if (row.admitted === null) throw new Bad('This programme had no intake in this batch. Enter the learner count first.');
+        if (v > row.admitted) throw new Bad(`Graduated (${v}) is more than the ${row.admitted} learners admitted. Change the learner count first.`);
+        await q`UPDATE batch_status SET graduated = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+      } else if (b.field === 'remarks') {
+        await q`UPDATE batch_status SET remarks = ${txt(b.value, 500)}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+      } else throw new Bad('Unknown field');
+      return readBatches();
+    }
+
+    case 'addBatch': {
+      const batch = txt(b.batch, 40);
+      if (!batch) throw new Bad('Give the batch a name, such as Jan-27');
+      const [x] = await q`SELECT 1 AS x FROM batch_status WHERE batch = ${batch}`;
+      if (x) throw new Bad(batch + ' is already there');
+      const progs = await q`SELECT DISTINCT programme, sort_order FROM batch_status ORDER BY sort_order`;
+      if (!progs.length) throw new Bad('No programmes to add the batch to');
+      await q`
+        INSERT INTO batch_status (batch, programme, sort_order, admitted, updated_by)
+        SELECT ${batch}, p, o, NULL, ${who}
+        FROM unnest(${progs.map(r => r.programme)}::text[], ${progs.map(r => r.sort_order)}::int[]) AS x(p, o)`;
+      return readBatches();
+    }
+
+    case 'deleteBatch': {
+      const batch = txt(b.batch, 40);
+      if (b.confirm !== 'DELETE') throw new Bad('Type DELETE to confirm');
+      await q`DELETE FROM batch_status WHERE batch = ${batch}`;
+      return readBatches();
     }
 
     case 'addProof': {
