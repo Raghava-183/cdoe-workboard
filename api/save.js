@@ -77,16 +77,17 @@ async function run(b, who) {
       if (!rows.length) throw new Bad('No entries to add');
       const cal = calOf(b.cal);
       // Titles are matched ignoring case, spaces and punctuation, so "Meeting - All" and
-      // "Meeting – All" count as the same entry and importing twice adds nothing.
-      const key = (s, e, t) => s + '|' + e + '|' + norm(t);
+      // "Meeting – All" count as the same entry and importing twice adds nothing. The batch
+      // counts too, so the same window for two batches on one date stays as two entries.
+      const key = (s, e, t, a) => s + '|' + e + '|' + norm(t) + '|' + norm(a);
       const existing = await q`
-        SELECT id::text AS id, to_char(start_date, 'YYYY-MM-DD') AS s, to_char(end_date, 'YYYY-MM-DD') AS e, title,
-               notes, status, (SELECT count(*) FROM proofs p WHERE p.event_id = events.id)::int AS links
+        SELECT id::text AS id, to_char(start_date, 'YYYY-MM-DD') AS s, to_char(end_date, 'YYYY-MM-DD') AS e,
+               title, audience, notes, status, (SELECT count(*) FROM proofs p WHERE p.event_id = events.id)::int AS links
         FROM events WHERE cal = ${cal}`;
-      const have = new Map(existing.map(r => [key(r.s, r.e, r.title), r]));
+      const have = new Map(existing.map(r => [key(r.s, r.e, r.title, r.audience), r]));
       const seen = new Set(), fresh = [];
       for (const r of rows) {
-        const k = key(r.start, r.end, r.title);
+        const k = key(r.start, r.end, r.title, r.audience);
         if (seen.has(k)) continue; seen.add(k);
         if (!have.has(k)) fresh.push(r);
       }
@@ -96,7 +97,7 @@ async function run(b, who) {
         // wrote notes or marked it completed.
         const drop = [];
         for (const r of existing) {
-          if (seen.has(key(r.s, r.e, r.title))) continue;
+          if (seen.has(key(r.s, r.e, r.title, r.audience))) continue;
           if (r.links > 0 || (r.notes || '').trim() || r.status === 'completed') { kept++; continue; }
           drop.push(r.id);
         }

@@ -1032,12 +1032,12 @@ async function handleEventFile(file){
     });
     const out = res.events;
     const norm = t => String(t || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
-    const key = (s, e, t) => s + "|" + e + "|" + norm(t);
-    const have = new Set(evOf().map(e => key(e.start, e.end, e.title)));
-    const inFile = new Set(out.map(r => key(r.start, r.end, r.title)));
-    const isDup = r => have.has(key(r.start, r.end, r.title));
+    const key = (s, e, t, a) => s + "|" + e + "|" + norm(t) + "|" + norm(a);
+    const have = new Set(evOf().map(e => key(e.start, e.end, e.title, e.audience)));
+    const inFile = new Set(out.map(r => key(r.start, r.end, r.title, r.audience)));
+    const isDup = r => have.has(key(r.start, r.end, r.title, r.audience));
     const dup = out.filter(isDup).length, fresh = out.length - dup;
-    const notInFile = evOf().filter(e => !inFile.has(key(e.start, e.end, e.title)));
+    const notInFile = evOf().filter(e => !inFile.has(key(e.start, e.end, e.title, e.audience)));
     const keepers = notInFile.filter(e => proofsOf(e.id).length || (e.notes || "").trim() || e.status === "completed");
     const goers = notInFile.length - keepers.length;
     const types = [...new Set([...C().types, ...out.map(r => r.category)])].filter(k => TYPES[k]);

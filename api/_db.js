@@ -90,8 +90,8 @@ const ADMITTED = {
   'MBA (General)': [23, 948, 50, 490, 282, 587, 172, 381, 516, 1010],
   'MBA (Finance)': [21, 148, 183, 83, 44, 87, 25, 54, 35, 103],
   'MBA HRM':       [17, 166, 60, 113, 75, 108, 20, 38, 37, 88],
-  'BCA':           [null, null, 31, 98, 35, 93, 8, 37, 41, 74],
-  'MCA':           [null, null, null, 502, 154, 350, 53, 169, 139, 407]
+  'BCA':           [null, 87, 31, 98, 35, 93, 8, 37, 41, 74],
+  'MCA':           [null, 250, null, 502, 154, 350, 53, 169, 139, 407]
 };
 
 let ready = false;
@@ -178,6 +178,17 @@ export async function ensure() {
       FROM unnest(${b}::text[], ${p}::text[], ${o}::int[], ${n}::int[]) AS x(b, p, o, n)
       ON CONFLICT (batch, programme) DO NOTHING`;
     await q`INSERT INTO meta (k, v) VALUES ('batches_seeded', 'yes') ON CONFLICT (k) DO NOTHING`;
+  }
+
+  /* Nov 2026: the Jul-22 intake for BCA and MCA was missing from the first sheet.
+     Filled in only where nobody has typed a figure, so entries are never overwritten. */
+  const [j22] = await q`SELECT 1 AS x FROM meta WHERE k = 'batches_jul22'`;
+  if (!j22) {
+    await q`UPDATE batch_status SET admitted = 87
+            WHERE batch = 'Jul-22' AND programme = 'BCA' AND admitted IS NULL`;
+    await q`UPDATE batch_status SET admitted = 250
+            WHERE batch = 'Jul-22' AND programme = 'MCA' AND admitted IS NULL`;
+    await q`INSERT INTO meta (k, v) VALUES ('batches_jul22', 'yes') ON CONFLICT (k) DO NOTHING`;
   }
 
   /* Every save attempt, kept so problems can be traced. */
