@@ -285,6 +285,138 @@
     return Math.max(...p.map((v, i) => Math.abs(v - q[i]))) <= 10;
   }
 
+  /* ================= Batch-wise status report =================
+
+     One sheet per batch, named for the batch ("Jan 2022", "July 2022").
+     Each sheet is a table of programmes with the figures the department
+     tracks. Column headings are found by their words, so the sheets need
+     not have the same columns in the same order, and a heading split over
+     two or three rows ("Total Admitted" / "(a)") still reads.          */
+
+  const BS_COLS = [
+    ["admitted",     /total admitted|admissions|\badmitted\b/],
+    ["discontinued", /discontinu|dropped|dropout/],
+    ["graduated",    /completed degree|completed|graduat/],
+    ["remaining",    /remaining/],
+    ["active",       /\bactive\b/],
+    ["notResponding",/not respond/],
+    ["backlogs",     /backlog/],
+    ["canComplete",  /can complete|complete by/]
+  ];
+  /* Headings that look like a figure but are not one. */
+  const BS_SKIP = /sanction|s\.?\s*no\b|^%$|percent/;
+
+  const BS_PROGS = [
+    [/^bba\b/,                               "BBA"],
+    [/^mba\s*\(?\s*gen/,                     "MBA (General)"],
+    [/^mba\s*\(?\s*fin/,                     "MBA (Finance)"],
+    [/^mba\s*\(?\s*(hrm?|hr)\b/,             "MBA HRM"],
+    [/^bca\b/,                               "BCA"],
+    [/^mca\b/,                               "MCA"]
+  ];
+  const bsProgName = s => {
+    const t = clean(s).toLowerCase().replace(/\s+/g, " ");
+    if (!t || /^total\b/.test(t)) return "";
+    for (const [rx, name] of BS_PROGS) if (rx.test(t)) return name;
+    return "";
+  };
+
+  /* "Jan 2022" → "Jan-22".  Falls back to the sheet name as typed. */
+  function bsBatchName(sheet) {
+    const m = clean(sheet).match(/([A-Za-z]{3,9})[^A-Za-z0-9]*((?:19|20)\d\d|\d\d)\b/);
+    if (!m) return clean(sheet);
+    const mi = MABBR.indexOf(m[1].slice(0, 3).toLowerCase());
+    if (mi < 0) return clean(sheet);
+    const y = Number(m[2]);
+    const mon = MABBR[mi][0].toUpperCase() + MABBR[mi].slice(1);
+    return mon + "-" + String(y < 100 ? y : y % 100).padStart(2, "0");
+  }
+
+  /* A figure in the report. "-" and "" mean nothing is recorded.
+     "22(1)" means 22, with 1 noted in brackets; the report's own totals
+     use the 22, so that is what is read, and the bracket is kept as a note. */
+  function bsNum(v) {
+    if (v === null || v === undefined) return { n: null, note: "" };
+    if (typeof v === "number") return Number.isFinite(v) ? { n: Math.round(v), note: "" } : { n: null, note: "" };
+    const s = clean(v);
+    if (!s || /^[-–—]+$/.test(s) || /^(na|n\/a|nil)$/i.test(s)) return { n: null, note: "" };
+    const m = s.match(/^(\d+)\s*(?:\((\d+)\))?$/);
+    if (!m) return { n: null, note: "" };
+    return { n: Number(m[1]), note: m[2] ? m[2] + " more in brackets on the sheet" : "" };
+  }
+
+  /* Workbook → [{ batch, rows: [{ programme, admitted, ... }], sheet }] */
+  function readBatchWorkbook(sheets) {
+    const out = [];
+    for (const sh of sheets) {
+      const rows = sh.rows || [];
+      /* The heading row is the one naming the programme column. */
+      let hr = -1, pc = -1;
+      for (let r = 0; r < Math.min(rows.length, 20) && hr < 0; r++)
+        for (let c = 0; c < (rows[r] || []).length; c++)
+          if (/programme|program|course/i.test(clean(rows[r][c])) && /name/i.test(clean(rows[r][c]))) { hr = r; pc = c; break; }
+      if (hr < 0)                                        // no "Programme Name": try a column of programme names
+        for (let r = 0; r < Math.min(rows.length, 20) && hr < 0; r++)
+          for (let c = 0; c < (rows[r] || []).length; c++)
+            if (bsProgName(rows[r][c])) { hr = r - 1; pc = c; break; }
+      if (hr < 0 || pc < 0) continue;
+
+      /* Headings can run over the next two rows, so read them together. */
+      const width = Math.max(...rows.slice(hr, hr + 4).map(r => (r || []).length), 0);
+      const head = [];
+      for (let c = 0; c < width; c++)
+        head[c] = clean([0, 1, 2].map(k => clean((rows[hr + k] || [])[c])).join(" ")).toLowerCase();
+
+      const col = {};
+      for (let c = 0; c < width; c++) {
+        if (c === pc || !head[c] || BS_SKIP.test(head[c])) continue;
+        for (const [key, rx] of BS_COLS)
+          if (col[key] === undefined && rx.test(head[c])) { col[key] = c; break; }
+      }
+      if (col.admitted === undefined) continue;          // nothing to read without the intake
+
+      const found = [];
+      let totalRow = null;
+      for (let r = hr + 1; r < rows.length; r++) {
+        const row = rows[r] || [];
+        /* "MBA" on one line with "(HRM)" on the next is one programme. */
+        let label = clean(row[pc]);
+        const next = clean((rows[r + 1] || [])[pc]);
+        if (/^mba$/i.test(label) && /^\(/.test(next)) label = label + " " + next;
+
+        const figures = () => {
+          const rec = {}, notes = [];
+          for (const [key] of BS_COLS) {
+            if (col[key] === undefined) { rec[key] = null; continue; }
+            const { n, note } = bsNum(row[col[key]]);
+            rec[key] = n;
+            if (note) notes.push(key === "admitted" ? note : key + ": " + note);
+          }
+          rec.note = notes.join("; ");
+          return rec;
+        };
+        if (/^total\b/i.test(label)) { totalRow = totalRow || figures(); continue; }
+
+        const programme = bsProgName(label);
+        if (!programme) continue;
+        if (found.some(x => x.programme === programme)) continue;
+        found.push(Object.assign({ programme }, figures()));
+      }
+
+      /* The sheet's own Total row is checked against its columns, so a slip in
+         the spreadsheet is reported rather than quietly carried over. */
+      const totals = [];
+      if (totalRow) for (const [key, label] of [["admitted", "Total Admitted"], ["discontinued", "Discontinued"],
+                                                ["graduated", "Completed Degree"]]) {
+        const adds = found.reduce((a, r) => a + (r[key] || 0), 0);
+        if (totalRow[key] !== null && totalRow[key] !== adds)
+          totals.push(`${label} adds up to ${adds}, but the sheet's Total row says ${totalRow[key]}`);
+      }
+      if (found.length) out.push({ batch: bsBatchName(sh.name), sheet: sh.name, rows: found, totals });
+    }
+    return out;
+  }
+
   /* SheetJS workbook (read with cellStyles: true) → [{ name, rows, fills }] */
   function sheetsFrom(wb, XLSX) {
     return wb.SheetNames.map(name => {
@@ -305,5 +437,5 @@
     });
   }
 
-  root.CDOEImport = { readWorkbook, sheetsFrom, guessType, tidy };
+  root.CDOEImport = { readWorkbook, readBatchWorkbook, sheetsFrom, guessType, tidy };
 })(typeof window !== "undefined" ? window : globalThis);

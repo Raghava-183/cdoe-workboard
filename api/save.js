@@ -10,6 +10,11 @@ const isDay = v => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
 const txt = (v, n) => String(v ?? '').trim().slice(0, n);
 const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 
+/* Batches Status: the follow-up figures from the batch-wise report. These are
+   counts the department keeps on the learners still on roll, so they are not
+   checked against the intake the way graduated and discontinued are. */
+const BS_EXTRA = { active: 1, not_responding: 1, backlogs_lt10: 1, can_complete: 1 };
+
 class Bad extends Error { constructor(m) { super(m); this.code = 400; } }
 
 export default async function handler(req, res) {
@@ -165,7 +170,8 @@ async function run(b, who) {
     case 'setBatchCell': {
       const batch = txt(b.batch, 40), prog = txt(b.programme, 80);
       if (!batch || !prog) throw new Bad('Unknown batch or programme');
-      const [row] = await q`SELECT admitted, graduated FROM batch_status WHERE batch = ${batch} AND programme = ${prog}`;
+      const [row] = await q`SELECT admitted, graduated, discontinued FROM batch_status
+                            WHERE batch = ${batch} AND programme = ${prog}`;
       if (!row) throw new Bad('That batch and programme are not in the list');
       const num = v => {
         if (v === '' || v === null || v === undefined) return null;
@@ -173,19 +179,81 @@ async function run(b, who) {
         if (!Number.isFinite(n) || n < 0 || n > 1000000) throw new Bad('Enter a whole number of learners, or leave it empty');
         return Math.round(n);
       };
+      /* Graduated and discontinued are both counted out of the learners admitted,
+         so together they can never come to more than that. */
+      const fits = (grad, disc) => {
+        if (row.admitted === null) throw new Bad('This programme had no intake in this batch. Enter the learner count first.');
+        if (grad + disc > row.admitted)
+          throw new Bad(`${grad} graduated and ${disc} discontinued come to ${grad + disc}, more than the ${row.admitted} learners admitted.`);
+      };
       if (b.field === 'admitted') {
-        const v = num(b.value);
-        if (v !== null && v < row.graduated) throw new Bad(`There are already ${row.graduated} graduated in this programme, so the learner count cannot be less than that.`);
+        const v = num(b.value), out = (row.graduated || 0) + (row.discontinued || 0);
+        if (v !== null && v < out)
+          throw new Bad(`${row.graduated || 0} graduated and ${row.discontinued || 0} discontinued are already recorded, so the learner count cannot be below ${out}.`);
         await q`UPDATE batch_status SET admitted = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
       } else if (b.field === 'graduated') {
         const v = num(b.value) ?? 0;
-        if (row.admitted === null) throw new Bad('This programme had no intake in this batch. Enter the learner count first.');
-        if (v > row.admitted) throw new Bad(`Graduated (${v}) is more than the ${row.admitted} learners admitted. Change the learner count first.`);
+        fits(v, row.discontinued || 0);
         await q`UPDATE batch_status SET graduated = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+      } else if (b.field === 'discontinued') {
+        const v = num(b.value);
+        fits(row.graduated || 0, v || 0);
+        await q`UPDATE batch_status SET discontinued = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+      } else if (BS_EXTRA[b.field]) {
+        const v = num(b.value);
+        if (b.field === 'active')         await q`UPDATE batch_status SET active         = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+        if (b.field === 'not_responding') await q`UPDATE batch_status SET not_responding = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+        if (b.field === 'backlogs_lt10')  await q`UPDATE batch_status SET backlogs_lt10  = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
+        if (b.field === 'can_complete')   await q`UPDATE batch_status SET can_complete   = ${v}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
       } else if (b.field === 'remarks') {
         await q`UPDATE batch_status SET remarks = ${txt(b.value, 500)}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch} AND programme = ${prog}`;
       } else throw new Bad('Unknown field');
       return readBatches();
+    }
+
+    /* The batch-wise status report, one sheet per batch. Only the batches and
+       programmes in the file are touched; everything else is left alone, and
+       remarks typed on the site are never overwritten. */
+    case 'importBatches': {
+      const list = Array.isArray(b.batches) ? b.batches.slice(0, 40) : [];
+      if (!list.length) throw new Bad('Nothing to import');
+      const num = v => {
+        if (v === '' || v === null || v === undefined) return null;
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0 || n > 1000000) return null;
+        return Math.round(n);
+      };
+      let changed = 0, added = 0, skipped = [];
+      for (const sheet of list) {
+        const batch = txt(sheet.batch, 40);
+        if (!batch) continue;
+        const progs = await q`SELECT DISTINCT programme, sort_order FROM batch_status ORDER BY sort_order`;
+        const order = new Map(progs.map(r => [r.programme, r.sort_order]));
+        for (const r of (Array.isArray(sheet.rows) ? sheet.rows.slice(0, 40) : [])) {
+          const prog = txt(r.programme, 80);
+          if (!prog) continue;
+          const adm = num(r.admitted), grad = num(r.graduated) ?? 0, disc = num(r.discontinued);
+          if (adm !== null && grad + (disc || 0) > adm) {
+            skipped.push(`${batch} ${prog}: ${grad} graduated + ${disc} discontinued is more than ${adm} admitted`);
+            continue;
+          }
+          const [had] = await q`SELECT 1 AS x FROM batch_status WHERE batch = ${batch} AND programme = ${prog}`;
+          if (!had) {
+            await q`INSERT INTO batch_status (batch, programme, sort_order, updated_by)
+                    VALUES (${batch}, ${prog}, ${order.get(prog) ?? 99}, ${who})`;
+            added++;
+          }
+          await q`
+            UPDATE batch_status SET
+              admitted = ${adm}, graduated = ${grad}, discontinued = ${disc},
+              active = ${num(r.active)}, not_responding = ${num(r.notResponding)},
+              backlogs_lt10 = ${num(r.backlogs)}, can_complete = ${num(r.canComplete)},
+              updated_by = ${who + ' · batch report'}, updated_at = now()
+            WHERE batch = ${batch} AND programme = ${prog}`;
+          changed++;
+        }
+      }
+      return Object.assign({ changed, added, skipped }, await readBatches());
     }
 
     case 'addBatch': {

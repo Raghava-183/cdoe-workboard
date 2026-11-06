@@ -36,16 +36,31 @@ A batch shows every programme with:
 | Column | Where it comes from |
 | ------ | ------------------- |
 | Learners | the intake figure, which you can correct |
-| Graduated | typed in |
-| Not graduated | worked out as Learners − Graduated |
-| Progress | the share who have graduated |
+| Discontinued | typed in, or imported |
+| Finished | those who completed the degree |
+| Still on roll | worked out as Learners − Discontinued − Finished |
+| Progress | of those who stayed, how many finished |
 | Remarks | typed in |
 
-Numbers and remarks save by themselves, and **Saved ✓** appears at the end of the row. A dash means the programme took no intake in that batch; type a learner count to open it up. Graduated can never be more than the learner count, and the site says so rather than saving a wrong figure.
+Below that, **the learners still on roll** are broken down into Active, Not responding, Under 10 backlogs and Can finish by Apr 2027 — the follow-up figures from the department's report.
 
-**Add a batch** creates a row for every programme, ready for next January. **Delete *batch*** removes one batch after you confirm. **Download Excel** gives two sheets: the wide intake table, and one row per batch and programme with graduated, not graduated, the percentage and the remarks. **Print** gives the same thing on paper.
+Numbers and remarks save by themselves, and **Saved ✓** appears at the end of the row. A dash means the programme took no intake in that batch; type a learner count to open it up. Finished and discontinued together can never come to more than the learner count, and the site says so rather than saving a wrong figure.
 
-The intake figures (8,830 learners across ten batches) load once, the first time the site starts after this update, so later corrections are never overwritten.
+**Add a batch** creates a row for every programme, ready for next January. **Delete *batch*** removes one batch after you confirm. **Download Excel** gives two sheets: the wide intake table, and one row per batch and programme with every figure, the percentage and the remarks. **Print** gives the same thing on paper.
+
+The intake figures load once, the first time the site starts after that tab arrived, so later corrections are never overwritten.
+
+### Importing the batch-wise report
+
+**Import report** reads the department's batch-wise status report: one sheet per batch, named for the batch ("Jan 2022", "July 2022"), each with a **Programme Name** column. These columns are found by their headings, wherever they sit and even when a heading runs over two rows:
+
+- **Total Admitted** (or "Jan-2023 Admissions")
+- **Discontinued** and **Completed Degree**
+- **Active**, **Not Responding**, **&lt;10 backlogs**, **How many can complete by April 27**
+
+Sanctioned intake, S.No. and % are ignored, and Remaining is worked out again rather than read. A dash means the programme took no intake. A figure written `22(1)` is read as 22, the way the sheet's own totals use it, and the bracket is reported.
+
+Before anything is saved you see every figure that would change, old value struck through. Only the batches and programmes in the file are touched; **remarks typed on the site are never overwritten**, and a batch or programme not yet on the site is added. The site also checks the file against itself and reports anything that does not add up — a Total row that disagrees with its own column, a Remaining that does not match, a Not Responding larger than the number still on roll.
 
 ## Everyday use
 
@@ -95,7 +110,8 @@ In Vercel, open the Neon database and use the SQL editor:
 ```sql
 SELECT cal, start_date, end_date, category, title, audience FROM events ORDER BY cal, start_date;
 SELECT * FROM proofs ORDER BY added_at DESC;
-SELECT batch, programme, admitted, graduated, remarks FROM batch_status ORDER BY sort_order, batch;
+SELECT batch, programme, admitted, discontinued, graduated, active, not_responding, backlogs_lt10, can_complete, remarks
+  FROM batch_status ORDER BY sort_order, batch;
 SELECT * FROM audit ORDER BY id DESC LIMIT 50;
 ```
 

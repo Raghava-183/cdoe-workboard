@@ -278,7 +278,7 @@ body.fs .mday{min-height:0}
 body.fs .legend{margin-top:.5rem}
 
 /* ── Batches Status ──────────────────────────────────────────── */
-.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3);margin-bottom:var(--s4)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:var(--s3);margin-bottom:var(--s4)}
 .tiles .meter{margin:0}
 .rtable table.mx th[scope="row"],.rtable table.bst th[scope="row"]{font-weight:700;text-align:left;white-space:nowrap}
 .rtable table.mx thead th,.rtable table.bst thead th{white-space:nowrap}
@@ -286,15 +286,16 @@ body.fs .legend{margin-top:.5rem}
 .rtable td.nums{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .rtable td.nums b{font-weight:700;font-size:.95rem}
 .rtable td.nums small{display:block;color:var(--ok);font-size:.72rem;font-weight:650;margin-top:.1rem}
+.rtable td.nums small em{color:var(--ink-3);font-style:normal}
 .rtable td.nums.tot{background:var(--rule-2)}
 .rtable td.none{text-align:right;color:#CFC5C6}
 .rtable tfoot th,.rtable tfoot td{background:var(--rule-2);font-weight:750;border-bottom:0}
 .rtable .lnk{appearance:none;border:0;background:transparent;color:var(--red-deep);font:inherit;font-weight:700;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:2px}
 .rtable .lnk:hover{color:var(--red)}
 
-table.bst td.n,table.bst th.n{text-align:right;width:7.5rem;font-variant-numeric:tabular-nums}
+table.bst td.n,table.bst th.n{text-align:right;width:6.4rem;font-variant-numeric:tabular-nums}
 table.bst td.n .left{font-weight:750}
-table.bst .nin{width:5.5rem;text-align:right;padding:.35rem .5rem;font-variant-numeric:tabular-nums}
+table.bst .nin{width:4.4rem;text-align:right;padding:.35rem .5rem;font-variant-numeric:tabular-nums}
 table.bst .nin:disabled{background:var(--rule-2);color:var(--ink-3)}
 table.bst td.pb,table.bst th.pb{width:9rem}
 table.bst td.pb{white-space:nowrap}
@@ -303,18 +304,41 @@ table.bst .track i{display:block;height:100%;background:var(--ok);border-radius:
 table.bst .pc{font-size:.78rem;color:var(--ink-2);margin-left:.45rem;font-variant-numeric:tabular-nums}
 table.bst .rin{width:100%;padding:.35rem .5rem}
 table.bst td.rm,table.bst th.rm{min-width:16rem}
+table.bst .pv{display:none}
 table.bst td.st{font-size:.72rem;color:var(--ink-3);white-space:nowrap;width:9rem}
 table.bst td.st .err{color:var(--red-deep);font-weight:650;white-space:normal;display:inline-block}
 table.bst tbody tr:hover td{background:#FFFCFC}
+h3.sub{margin:var(--s5) 0 .2rem;font-size:1.05rem;font-variation-settings:"wdth" 84;letter-spacing:-.01em}
+h3.sub + .hint{margin:0 0 var(--s3)}
+table.bst2 thead th.n{width:7.2rem;white-space:normal;line-height:1.2}
+h4.impb{margin:var(--s4) 0 .35rem;font-size:.95rem;font-variation-settings:"wdth" 86}
+h4.impb:first-child{margin-top:0}
+.chg{display:inline-block;background:var(--rule-2);border-radius:var(--r-sm);padding:.1rem .45rem;margin:.1rem .2rem .1rem 0;font-size:.8rem;white-space:nowrap}
+.chg s{color:var(--ink-3);text-decoration-thickness:1px}
+.chg b{color:var(--red-deep)}
+.warnbox{border:1.5px solid var(--red);border-radius:var(--r-lg);padding:.6rem .8rem;margin-bottom:var(--s3);background:var(--red-tint)}
+.warnbox summary{font-weight:700;cursor:pointer;font-size:.88rem}
+.warnbox ul{margin:.5rem 0 0;padding-left:1.1rem;font-size:.84rem;line-height:1.5}
 @media (max-width:900px){
   .tiles{grid-template-columns:1fr}
   table.bst td.pb,table.bst th.pb,table.bst td.st,table.bst th.st{display:none}
   table.bst td.n,table.bst th.n{width:5.5rem}
 }
 @media print{
-  .tiles{display:grid!important;grid-template-columns:repeat(3,1fr)}
+  .tiles{display:grid!important;grid-template-columns:repeat(4,1fr)}
+  .tiles .meter .big{font-size:1.7rem}
   table.bst td.pb,table.bst th.pb,table.bst td.st,table.bst th.st{display:none}
-  table.bst .nin,table.bst .rin{border:0;padding:0;background:transparent}
+  table.bst .nin,table.bst .rin{border:0;padding:0;background:transparent;width:auto;min-width:0}
+  table.bst .nin:disabled,table.bst .rin:disabled{background:transparent;color:var(--ink)}
+  /* Placeholders are prompts for typing, not something to print. */
+  table.bst .nin::placeholder,table.bst .rin::placeholder{color:transparent}
+  table.bst .nin::-webkit-outer-spin-button,table.bst .nin::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+  table.bst .nin{-moz-appearance:textfield}
+  /* A remark can run longer than an input shows, so paper gets the text itself. */
+  table.bst .rin{display:none}
+  table.bst .pv{display:block;white-space:normal}
+  h3.sub{break-before:auto;break-after:avoid}
+  .rtable,table.bst tr{break-inside:avoid}
   .rtable .lnk{color:var(--ink);text-decoration:none}
   #view > p.hint,#view > .notice{display:none}
 }
@@ -400,7 +424,7 @@ table.bst tbody tr:hover td{background:#FFFCFC}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span>Version 31 Oct 2026</span>
+    <span>Version 6 Nov 2026</span>
   </div>
 </footer>
 
@@ -1190,8 +1214,18 @@ function bsProgs(){
 }
 const bsAt = (batch, prog) => state.bsRows.find(r => r.batch === batch && r.programme === prog);
 const bsOf = batch => state.bsRows.filter(r => r.batch === batch);
-const bsSum = rows => rows.reduce((a, r) => ({ adm: a.adm + (r.admitted || 0), grad: a.grad + (r.graduated || 0) }), { adm: 0, grad: 0 });
-const bsPct = (g, a) => a > 0 ? Math.round(g / a * 100) : 0;
+const BS_FOLLOW = [["active", "Active"], ["not_responding", "Not responding"],
+                   ["backlogs_lt10", "Under 10 backlogs"], ["can_complete", "Can finish by Apr 2027"]];
+const bsSum = rows => rows.reduce((a, r) => ({
+  adm: a.adm + (r.admitted || 0), grad: a.grad + (r.graduated || 0), disc: a.disc + (r.discontinued || 0),
+  active: a.active + (r.active || 0), not_responding: a.not_responding + (r.not_responding || 0),
+  backlogs_lt10: a.backlogs_lt10 + (r.backlogs_lt10 || 0), can_complete: a.can_complete + (r.can_complete || 0)
+}), { adm: 0, grad: 0, disc: 0, active: 0, not_responding: 0, backlogs_lt10: 0, can_complete: 0 });
+/* Learners still on roll: admitted, less those who left and those who finished. */
+const bsRoll = r => r.admitted === null ? 0 : r.admitted - (r.discontinued || 0) - (r.graduated || 0);
+/* The pass rate the department reports: of those who stayed, how many finished. */
+const bsPct = (g, a, d) => { const base = (a || 0) - (d || 0); return base > 0 ? Math.round(g / base * 100) : 0; };
+const bsAnyFollow = rows => rows.some(r => BS_FOLLOW.some(([k]) => r[k] !== null && r[k] !== undefined));
 const num = n => Number(n || 0).toLocaleString("en-IN");
 
 function batchesView(){
@@ -1218,7 +1252,7 @@ function bsHead(){
 function bsStrip(){
   const items = bsBatches().map(b => {
     const t = bsSum(bsOf(b));
-    return { b, adm: t.adm, grad: t.grad, pct: bsPct(t.grad, t.adm) };
+    return { b, adm: t.adm, grad: t.grad, pct: bsPct(t.grad, t.adm, t.disc) };
   });
   return `<nav class="strip" aria-label="Batches">
     <button data-bs="all" ${state.bsBatch === "all" ? 'aria-current="true"' : ""} aria-label="All batches together">
@@ -1235,6 +1269,7 @@ function bsStrip(){
 function bsBar(){
   if (!canEdit()) return "";
   return `<div class="bar2"><span class="grow"></span>
+    <button class="btn line" id="bsImp">${ICON.up}Import report</button>
     <button class="btn line" id="bsAdd">${ICON.plus}Add a batch</button>
     ${state.bsBatch === "all" ? "" : `<button class="btn line" id="bsDel">${ICON.bin}Delete ${esc(state.bsBatch)}</button>`}
   </div>`;
@@ -1244,62 +1279,84 @@ function bsBar(){
 function bsMatrix(){
   const bs = bsBatches(), progs = bsProgs();
   const grand = bsSum(state.bsRows);
+  const under = t => t.grad || t.disc
+    ? `<small>${num(t.grad)} done${t.disc ? ` · <em>${num(t.disc)} left</em>` : ""}</small>` : "";
   const cell = r => {
     if (!r || r.admitted === null) return `<td class="none">–</td>`;
-    return `<td class="nums"><b>${num(r.admitted)}</b>${r.graduated ? `<small>${num(r.graduated)} out</small>` : ""}</td>`;
+    return `<td class="nums"><b>${num(r.admitted)}</b>${under(bsSum([r]))}</td>`;
   };
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Batches Status</h2>
-      <p>Learners admitted, and how many have graduated. Printed ${esc(longDate(todayISO()))}.</p></div>
+      <p>Learners admitted, how many have finished and how many discontinued. Printed ${esc(longDate(todayISO()))}.</p></div>
     <div class="rtable"><table class="mx">
     <thead><tr><th>Programme</th>${bs.map(b => `<th class="nums"><button class="lnk" data-bs="${esc(b)}">${esc(b)}</button></th>`).join("")}<th class="nums">Total</th></tr></thead>
     <tbody>${progs.map(p => {
       const rows = bs.map(b => bsAt(b, p)), t = bsSum(rows.filter(Boolean));
       return `<tr><th scope="row">${esc(p)}</th>${rows.map(cell).join("")}
-        <td class="nums tot"><b>${num(t.adm)}</b>${t.grad ? `<small>${num(t.grad)} out</small>` : ""}</td></tr>`;
+        <td class="nums tot"><b>${num(t.adm)}</b>${under(t)}</td></tr>`;
     }).join("")}</tbody>
     <tfoot><tr><th scope="row">All programmes</th>
       ${bs.map(b => { const t = bsSum(bsOf(b));
-        return `<td class="nums"><b>${num(t.adm)}</b>${t.grad ? `<small>${num(t.grad)} out</small>` : ""}</td>`; }).join("")}
-      <td class="nums tot"><b>${num(grand.adm)}</b>${grand.grad ? `<small>${num(grand.grad)} out</small>` : ""}</td></tr></tfoot>
+        return `<td class="nums"><b>${num(t.adm)}</b>${under(t)}</td>`; }).join("")}
+      <td class="nums tot"><b>${num(grand.adm)}</b>${under(grand)}</td></tr></tfoot>
     </table></div>
-    <p class="hint" style="margin-top:var(--s3)">Choose a batch above, or a batch name in the table, to fill in how many have graduated and add remarks. "out" means graduated.</p>`;
+    <p class="hint" style="margin-top:var(--s3)">Choose a batch above, or a batch name in the table, to fill in the figures and add remarks. <b>done</b> means finished the degree, <b>left</b> means discontinued.</p>`;
 }
 
 /* One batch: every programme, with the numbers people fill in. */
 function bsDetail(batch){
   const ed = canEdit(), rows = bsProgs().map(p => bsAt(batch, p)).filter(Boolean);
-  const t = bsSum(rows), notOut = t.adm - t.grad, pct = bsPct(t.grad, t.adm);
+  const t = bsSum(rows), roll = t.adm - t.disc - t.grad, pct = bsPct(t.grad, t.adm, t.disc);
+  const cell = (r, f, dis) => {
+    const v = r[f];
+    return ed ? `<input type="number" min="0" step="1" class="nin" data-f="${f}" value="${v === null || v === undefined ? "" : v}"
+        placeholder="–" ${dis ? "disabled" : ""} aria-label="${esc(f.replace(/_/g, " "))}, ${esc(r.programme)}">`
+      : (v === null || v === undefined ? `<span class="none">–</span>` : num(v));
+  };
   const line = r => {
-    const none = r.admitted === null, left = none ? 0 : r.admitted - r.graduated, p = bsPct(r.graduated, r.admitted || 0);
+    const none = r.admitted === null, p = bsPct(r.graduated, r.admitted, r.discontinued);
     return `<tr data-prog="${esc(r.programme)}">
       <th scope="row">${esc(r.programme)}</th>
-      <td class="n">${ed ? `<input type="number" min="0" step="1" class="nin" data-f="admitted" value="${r.admitted === null ? "" : r.admitted}" placeholder="–" aria-label="Learners admitted, ${esc(r.programme)}">`
-        : (none ? `<span class="none">–</span>` : num(r.admitted))}</td>
-      <td class="n">${ed ? `<input type="number" min="0" step="1" class="nin" data-f="graduated" value="${r.graduated || 0}" ${none ? "disabled" : ""} aria-label="Graduated, ${esc(r.programme)}">`
-        : (none ? `<span class="none">–</span>` : num(r.graduated))}</td>
-      <td class="n"><b class="left">${none ? "–" : num(left)}</b></td>
-      <td class="pb"><span class="track" title="${p}% graduated"><i style="width:${p}%"></i></span><span class="pc">${none ? "" : p + "%"}</span></td>
-      <td class="rm">${ed ? `<input type="text" class="rin" data-f="remarks" value="${esc(r.remarks)}" placeholder="Add a note" aria-label="Remarks, ${esc(r.programme)}">`
+      <td class="n">${cell(r, "admitted")}</td>
+      <td class="n">${cell(r, "discontinued", none)}</td>
+      <td class="n">${cell(r, "graduated", none)}</td>
+      <td class="n"><b class="left">${none ? "–" : num(bsRoll(r))}</b></td>
+      <td class="pb"><span class="track" title="${p}% of those who stayed have finished"><i style="width:${p}%"></i></span><span class="pc">${none ? "" : p + "%"}</span></td>
+      <td class="rm">${ed ? `<input type="text" class="rin" data-f="remarks" value="${esc(r.remarks)}" placeholder="Add a note" aria-label="Remarks, ${esc(r.programme)}"><span class="pv">${esc(r.remarks)}</span>`
         : (r.remarks ? esc(r.remarks) : `<span class="hint">—</span>`)}</td>
       <td class="st"><span data-state>${r.by && r.by !== "Department intake sheet" ? "Changed by " + esc(r.by) : ""}</span></td>
     </tr>`;
   };
+  const follow = (ed || bsAnyFollow(rows)) ? `
+    <h3 class="sub">The ${num(roll)} still on roll</h3>
+    <p class="hint">Where the learners who have neither finished nor left have got to.</p>
+    <div class="rtable"><table class="bst bst2">
+      <thead><tr><th>Programme</th><th class="n">Still on roll</th>${BS_FOLLOW.map(([, l]) => `<th class="n">${l}</th>`).join("")}<th class="st"></th></tr></thead>
+      <tbody>${rows.map(r => `<tr data-prog="${esc(r.programme)}">
+        <th scope="row">${esc(r.programme)}</th>
+        <td class="n">${r.admitted === null ? `<span class="none">–</span>` : num(bsRoll(r))}</td>
+        ${BS_FOLLOW.map(([k]) => `<td class="n">${cell(r, k, r.admitted === null)}</td>`).join("")}
+        <td class="st"><span data-state></span></td></tr>`).join("")}</tbody>
+      <tfoot><tr><th scope="row">All programmes</th><td class="n">${num(roll)}</td>
+        ${BS_FOLLOW.map(([k]) => `<td class="n">${num(t[k])}</td>`).join("")}<td></td></tr></tfoot>
+    </table></div>` : "";
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Batches Status — ${esc(bsLabel(batch))} batch</h2>
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
     <div class="tiles">
       <div class="meter"><div class="big">${num(t.adm)}</div><div class="hint">learners admitted in ${esc(bsLabel(batch))}</div></div>
-      <div class="meter"><div class="big">${num(t.grad)}<span> of ${num(t.adm)}</span></div>
-        <div class="track"><i style="width:${pct}%;background:var(--ok)"></i></div><div class="hint">graduated · ${pct}%</div></div>
-      <div class="meter"><div class="big">${num(notOut)}</div><div class="hint">not graduated yet</div></div>
+      <div class="meter"><div class="big">${num(t.grad)}<span> of ${num(t.adm - t.disc)}</span></div>
+        <div class="track"><i style="width:${pct}%;background:var(--ok)"></i></div><div class="hint">finished the degree · ${pct}% of those who stayed</div></div>
+      <div class="meter"><div class="big">${num(t.disc)}</div><div class="hint">discontinued</div></div>
+      <div class="meter"><div class="big">${num(roll)}</div><div class="hint">still on roll</div></div>
     </div>
     ${ed ? "" : `<div class="notice">You are viewing. <a href="#" id="bsSignLink">Sign in</a> to fill in the numbers and remarks.</div>`}
     <div class="rtable"><table class="bst">
-      <thead><tr><th>Programme</th><th class="n">Learners</th><th class="n">Graduated</th><th class="n">Not graduated</th><th class="pb">Progress</th><th class="rm">Remarks</th><th class="st"></th></tr></thead>
+      <thead><tr><th>Programme</th><th class="n">Learners</th><th class="n">Discontinued</th><th class="n">Finished</th><th class="n">Still on roll</th><th class="pb">Progress</th><th class="rm">Remarks</th><th class="st"></th></tr></thead>
       <tbody>${rows.map(line).join("")}</tbody>
-      <tfoot><tr><th scope="row">All programmes</th><td class="n">${num(t.adm)}</td><td class="n">${num(t.grad)}</td><td class="n">${num(notOut)}</td>
+      <tfoot><tr><th scope="row">All programmes</th><td class="n">${num(t.adm)}</td><td class="n">${num(t.disc)}</td><td class="n">${num(t.grad)}</td><td class="n">${num(roll)}</td>
         <td class="pb"><span class="track"><i style="width:${pct}%"></i></span><span class="pc">${pct}%</span></td><td colspan="2"></td></tr></tfoot>
     </table></div>
-    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a number and it saves by itself. <b>Not graduated</b> is worked out for you. A dash means the programme took no intake in this batch.</p>` : ""}`;
+    ${follow}
+    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a number and it saves by itself. <b>Still on roll</b> is worked out for you: learners, less those who discontinued and those who finished. <b>Progress</b> is how many of those who stayed have finished. A dash means the programme took no intake in this batch.</p>` : ""}`;
 }
 
 /* ── Saving ─────────────────────────────────────────────────── */
@@ -1309,21 +1366,28 @@ async function bsSave(el){
   clearTimeout(bsTimer); bsTimer = null;
   const tr = el.closest("tr"); if (!tr) return;
   const prog = tr.dataset.prog, field = el.dataset.f, value = el.value;
-  const stamp = m => { const s = $(`tr[data-prog="${CSS.escape(prog)}"] [data-state]`); if (s) { s.textContent = m; s.classList.remove("err"); } };
+  /* Both tables have a row per programme, so the note goes in the row being typed in. */
+  const where = () => (tr.isConnected ? tr : $(`tr[data-prog="${CSS.escape(prog)}"]`));
+  const stamp = (m, bad) => { const row = where(); const s = row && row.querySelector("[data-state]");
+    if (s) { s.textContent = m; s.classList.toggle("err", !!bad); } };
   stamp("Saving…");
   try {
     const j = await post("setBatchCell", { batch: state.bsBatch, programme: prog, field, value });
     state.bsRows = j.batches || state.bsRows;
     if (field !== "remarks") {                       // numbers change the totals, so redraw
       const a = document.activeElement, ap = a && a.closest ? (a.closest("tr") || {}).dataset : null;
-      const keep = ap && ap.prog ? { prog: ap.prog, f: a.dataset.f } : null;
+      const tbl = a && a.closest ? (a.closest("table") || {}).className : "";
+      const keep = ap && ap.prog ? { prog: ap.prog, f: a.dataset.f, two: /bst2/.test(tbl || "") } : null;
       render();
-      if (keep) { const back = $(`tr[data-prog="${CSS.escape(keep.prog)}"] [data-f="${keep.f}"]`); if (back) back.focus(); }
+      if (keep) {
+        const back = $(`${keep.two ? "table.bst2 " : "table.bst:not(.bst2) "}tr[data-prog="${CSS.escape(keep.prog)}"] [data-f="${keep.f}"]`)
+          || $(`tr[data-prog="${CSS.escape(keep.prog)}"] [data-f="${keep.f}"]`);
+        if (back) back.focus();
+      }
     }
     stamp("Saved ✓ " + new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
   } catch (e) {
-    const s = $(`tr[data-prog="${CSS.escape(prog)}"] [data-state]`);
-    if (s) { s.textContent = e.message; s.classList.add("err"); }
+    stamp(e.message, true);
     toast(e.message, true);
   }
 }
@@ -1362,6 +1426,105 @@ async function bsDelBatch(){
   } catch (e) { toast(e.message, true); }
 }
 
+/* ── Importing the batch-wise status report ──────────────────── */
+function bsImport(){
+  const d = $("#dlg"); d.className = ""; delete d.dataset.evid; delete d.dataset.edit;
+  d.innerHTML = `<div class="dh"><div><h3>Import the batch-wise report</h3>
+      <p>Reads the department's status report: one sheet for each batch, with a row for every programme.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db"><div class="drop">
+    <b>Name each sheet for its batch</b> — "Jan 2022", "July 2022" — and give it a <b>Programme Name</b> column. These columns are read wherever they sit:
+    <ol>
+      <li><b>Total Admitted</b> (or "Jan-2023 Admissions") — the learners taken in</li>
+      <li><b>Discontinued</b> and <b>Completed Degree</b></li>
+      <li><b>Active</b>, <b>Not Responding</b>, <b>&lt;10 backlogs</b>, <b>How many can complete by April 27</b></li>
+    </ol>
+    A dash means the programme took no intake. Sanctioned intake, S.No., % and Remaining are worked out or ignored.
+    <div class="row"><label class="btn">${ICON.up}Choose file<input type="file" id="bsFile" accept=".xlsx,.xls,.csv" hidden></label></div>
+  </div><p class="hint">You will see every figure that changes before anything is saved. Remarks typed here are never overwritten.</p></div>`;
+  if (!d.open) d.showModal();
+}
+
+async function bsHandleFile(file){
+  try {
+    if (!window.XLSX) throw new Error("The spreadsheet reader is still loading. Try again in a moment.");
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false, cellStyles: true });
+    const found = CDOEImport.readBatchWorkbook(CDOEImport.sheetsFrom(wb, XLSX));
+    const known = new Set(bsBatches()), progs = new Set(bsProgs());
+    const FIELDS = [["admitted", "Learners"], ["discontinued", "Discontinued"], ["graduated", "Finished"],
+      ["active", "Active"], ["notResponding", "Not responding"], ["backlogs", "Under 10 backlogs"], ["canComplete", "Can finish"]];
+    const DBF = { admitted: "admitted", discontinued: "discontinued", graduated: "graduated",
+      active: "active", notResponding: "not_responding", backlogs: "backlogs_lt10", canComplete: "can_complete" };
+
+    /* What each figure would change from, and anything that does not add up. */
+    const warn = [], newProgs = new Set();
+    let changes = 0, same = 0;
+    found.forEach(sh => sh.rows.forEach(r => {
+      const was = bsAt(sh.batch, r.programme);
+      if (!progs.has(r.programme)) newProgs.add(r.programme);
+      r._diff = [];
+      FIELDS.forEach(([k, label]) => {
+        /* Finished is stored as 0 rather than blank, so a blank in the file
+           against a 0 on the site is not a change. */
+        const now = k === "graduated" ? (r[k] ?? 0) : r[k];
+        const before = was ? was[DBF[k]] : undefined;
+        const b = (before === null || before === undefined) ? null : before;
+        if (now === b) { same++; return; }
+        r._diff.push({ label, from: b, to: now });
+        changes++;
+      });
+      if (r.admitted !== null && (r.graduated || 0) + (r.discontinued || 0) > r.admitted)
+        warn.push(`${sh.batch} ${r.programme}: ${r.graduated} finished and ${r.discontinued} discontinued come to more than the ${r.admitted} admitted, so this row will be skipped.`);
+      if (r.remaining !== null && r.admitted !== null
+          && r.remaining !== r.admitted - (r.discontinued || 0) - (r.graduated || 0))
+        warn.push(`${sh.batch} ${r.programme}: the sheet's Remaining says ${r.remaining}, but ${r.admitted} − ${r.discontinued} − ${r.graduated} is ${r.admitted - (r.discontinued || 0) - (r.graduated || 0)}. The figures on the sheet are used; Remaining is worked out again here.`);
+      if (r.notResponding !== null && r.remaining !== null && r.notResponding > r.remaining)
+        warn.push(`${sh.batch} ${r.programme}: Not Responding (${r.notResponding}) is more than the ${r.remaining} still on roll. Saved as it is on the sheet — worth checking.`);
+      if (was && (was.remarks || "").trim()) r._keep = was.remarks;
+    }));
+    found.forEach(sh => (sh.totals || []).forEach(t => warn.push(`${sh.sheet}: ${t}. The programme rows are used.`)));
+    const unknown = found.filter(sh => !known.has(sh.batch));
+
+    const d = $("#dlg");
+    d.innerHTML = `<div class="dh"><div><h3>Check before saving</h3>
+      <p>${esc(file.name)}: ${found.length} ${found.length === 1 ? "batch" : "batches"} found${changes ? `, ${changes} ${changes === 1 ? "figure" : "figures"} to change` : ", nothing to change"}. The other batches on the site are not touched.</p></div>
+      <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+    <div class="db">
+      ${!found.length ? `<div class="notice">No batch sheets were read. Each sheet needs a <b>Programme Name</b> column and a column of admitted figures, and the sheet name should carry the batch, such as "July 2022".</div>` : ""}
+      ${unknown.length ? `<div class="notice">${unknown.map(s => esc(s.batch)).join(", ")} ${unknown.length === 1 ? "is" : "are"} not on the site yet and will be added as ${unknown.length === 1 ? "a new batch" : "new batches"}.</div>` : ""}
+      ${newProgs.size ? `<div class="notice">${[...newProgs].map(esc).join(", ")} ${newProgs.size === 1 ? "is a programme" : "are programmes"} not on the site yet and will be added.</div>` : ""}
+      ${warn.length ? `<details class="warnbox" open><summary>${warn.length} thing${warn.length === 1 ? "" : "s"} to look at in the file</summary><ul>${warn.map(w => `<li>${esc(w)}</li>`).join("")}</ul></details>` : ""}
+      ${found.map(sh => {
+        const rows = sh.rows.filter(r => r._diff.length);
+        return `<h4 class="impb">${esc(sh.sheet)} → <b>${esc(bsLabel(sh.batch))}</b>${known.has(sh.batch) ? "" : " (new)"}</h4>
+        ${!rows.length ? `<p class="hint">Already matches the site.</p>` : `<div class="ftable"><table>
+          <thead><tr><th>Programme</th><th>Changes</th></tr></thead>
+          <tbody>${rows.map(r => `<tr><td class="nowrap"><b>${esc(r.programme)}</b>${r._keep ? `<br><small class="hint">remark kept: ${esc(r._keep.slice(0, 40))}</small>` : ""}</td>
+            <td>${r._diff.map(c => `<span class="chg">${esc(c.label)} <s>${c.from === null ? "–" : num(c.from)}</s> → <b>${c.to === null ? "–" : num(c.to)}</b></span>`).join(" ")}
+              ${r.note ? `<br><small class="hint">${esc(r.note)}</small>` : ""}</td></tr>`).join("")}</tbody></table></div>`}`;
+      }).join("")}
+    </div>
+    <div class="df"><button class="btn line" id="bsImpBack">Back</button>
+      <button class="btn" id="bsImpGo" ${changes ? "" : "disabled"}>Save ${changes} ${changes === 1 ? "figure" : "figures"}</button></div>`;
+    $("#bsImpBack").onclick = bsImport;
+    $("#bsImpGo").onclick = async () => {
+      $("#bsImpGo").disabled = true;
+      try {
+        const payload = found.map(sh => ({ batch: sh.batch, rows: sh.rows.map(r => ({
+          programme: r.programme, admitted: r.admitted, discontinued: r.discontinued, graduated: r.graduated,
+          active: r.active, notResponding: r.notResponding, backlogs: r.backlogs, canComplete: r.canComplete })) }));
+        const j = await post("importBatches", { batches: payload });
+        state.bsRows = j.batches || state.bsRows;
+        if (state.bsBatch !== "all" && !bsBatches().includes(state.bsBatch)) state.bsBatch = "all";
+        history.replaceState(null, "", hashFor()); render(); d.close();
+        toast(`Saved. ${j.changed} ${j.changed === 1 ? "programme" : "programmes"} updated across ${payload.length} ${payload.length === 1 ? "batch" : "batches"}`
+          + (j.added ? `, ${j.added} new ${j.added === 1 ? "row" : "rows"} added` : "")
+          + (j.skipped && j.skipped.length ? `. ${j.skipped.length} skipped — see the file.` : "."));
+      } catch (e) { toast(e.message, true); $("#bsImpGo").disabled = false; }
+    };
+  } catch (e) { toast("Could not read that file: " + e.message, true); report("batch import: " + e.message); }
+}
+
 function bsExcel(){
   if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
   const bs = bsBatches(), progs = bsProgs(), wb = XLSX.utils.book_new();
@@ -1375,16 +1538,27 @@ function bsExcel(){
   w1["!cols"] = [{ wch: 18 }, ...bs.map(() => ({ wch: 9 })), { wch: 10 }];
   XLSX.utils.book_append_sheet(wb, w1, "Learners");
 
-  const detail = [["Batch", "Programme", "Learners", "Graduated", "Not graduated", "% graduated", "Remarks", "Last changed by"]];
+  /* One row per batch and programme, in the order the department's own report reads. */
+  const blank = v => (v === null || v === undefined ? "" : v);
+  const detail = [["Batch", "Programme", "Learners", "Discontinued", "Finished", "% of those who stayed",
+                   "Still on roll", "Active", "Not responding", "Under 10 backlogs", "Can finish by Apr 2027",
+                   "Remarks", "Last changed by"]];
   bs.forEach(b => progs.forEach(p => {
     const r = bsAt(b, p); if (!r) return;
     const none = r.admitted === null;
-    detail.push([b, p, none ? "" : r.admitted, none ? "" : r.graduated, none ? "" : r.admitted - r.graduated,
-      none ? "" : bsPct(r.graduated, r.admitted) / 100, r.remarks, r.by || ""]);
+    detail.push([b, p, blank(r.admitted), blank(r.discontinued), none ? "" : r.graduated,
+      none ? "" : bsPct(r.graduated, r.admitted, r.discontinued) / 100,
+      none ? "" : bsRoll(r), blank(r.active), blank(r.not_responding), blank(r.backlogs_lt10), blank(r.can_complete),
+      r.remarks, r.by || ""]);
   }));
+  const tot = bsSum(state.bsRows);
+  detail.push(["All batches", "All programmes", tot.adm, tot.disc, tot.grad,
+    bsPct(tot.grad, tot.adm, tot.disc) / 100, tot.adm - tot.disc - tot.grad,
+    tot.active, tot.not_responding, tot.backlogs_lt10, tot.can_complete, "", ""]);
   const w2 = XLSX.utils.aoa_to_sheet(detail);
-  w2["!cols"] = [{ wch: 9 }, { wch: 18 }, { wch: 10 }, { wch: 11 }, { wch: 14 }, { wch: 12 }, { wch: 46 }, { wch: 18 }];
-  w2["!autofilter"] = { ref: "A1:H" + detail.length };
+  w2["!cols"] = [{ wch: 9 }, { wch: 18 }, { wch: 10 }, { wch: 13 }, { wch: 10 }, { wch: 20 }, { wch: 12 },
+                 { wch: 9 }, { wch: 15 }, { wch: 17 }, { wch: 20 }, { wch: 46 }, { wch: 18 }];
+  w2["!autofilter"] = { ref: "A1:M" + (detail.length - 1) };
   for (let i = 2; i <= detail.length; i++) { const c = w2["F" + i]; if (c && typeof c.v === "number") c.z = "0%"; }
   XLSX.utils.book_append_sheet(wb, w2, "Batch status");
   XLSX.writeFile(wb, "CDOE-Batches-Status.xlsx");
@@ -1408,6 +1582,7 @@ document.addEventListener("click", async ev => {
   if (t.dataset.bs) { state.tab = "batches"; state.bsBatch = t.dataset.bs; go("#batches/" + encodeURIComponent(t.dataset.bs)); return; }
   if (t.id === "bsPrint") { window.print(); return; }
   if (t.id === "bsXl") { bsExcel(); return; }
+  if (t.id === "bsImp") { bsImport(); return; }
   if (t.id === "bsAdd") { bsAddBatch(); return; }
   if (t.id === "bsGo") { bsDoAdd(); return; }
   if (t.id === "bsDel") { bsDelBatch(); return; }
@@ -1472,6 +1647,7 @@ document.addEventListener("change", ev => {
   if (t.id === "pUrl") { attachLink($("#dlg").dataset.evid, { auto:true }); return; }
   if (t.matches(".nin, .rin")) { bsSave(t); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
+  if (t.id === "bsFile" && t.files[0]) { bsHandleFile(t.files[0]); return; }
 });
 document.addEventListener("paste", ev => {
   if (ev.target.id === "pUrl" || ev.target.id === "pLbl") setTimeout(() => attachLink($("#dlg").dataset.evid, { auto:true }), 60);

@@ -165,6 +165,16 @@ export async function ensure() {
       PRIMARY KEY (batch, programme)
     )`;
 
+  /* Nov 2026: the batch-wise status report tracks more than the intake and the
+     passes. Discontinued matters most: those learners are not "not graduated",
+     they have left, so they are counted apart. Added to whatever is already in
+     the table, so nothing recorded by hand is disturbed. */
+  await q`ALTER TABLE batch_status ADD COLUMN IF NOT EXISTS discontinued   INT`;
+  await q`ALTER TABLE batch_status ADD COLUMN IF NOT EXISTS active         INT`;
+  await q`ALTER TABLE batch_status ADD COLUMN IF NOT EXISTS not_responding INT`;
+  await q`ALTER TABLE batch_status ADD COLUMN IF NOT EXISTS backlogs_lt10  INT`;
+  await q`ALTER TABLE batch_status ADD COLUMN IF NOT EXISTS can_complete   INT`;
+
   /* The intake figures are loaded once, ever, so later edits are never overwritten. */
   const [bseeded] = await q`SELECT 1 AS x FROM meta WHERE k = 'batches_seeded'`;
   if (!bseeded) {
@@ -225,7 +235,9 @@ export async function readCalendar() {
 
 export async function readBatches() {
   const rows = await q`
-    SELECT batch, programme, sort_order, admitted, graduated, remarks, updated_by AS by,
+    SELECT batch, programme, sort_order, admitted, graduated, discontinued,
+           active, not_responding, backlogs_lt10, can_complete,
+           remarks, updated_by AS by,
            to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS at
     FROM batch_status ORDER BY sort_order, programme`;
   return { batches: rows };
