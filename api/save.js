@@ -1,4 +1,4 @@
-import { q, ensure, readCalendar, readBatches, readBody, logSave } from './_db.js';
+import { q, ensure, readCalendar, readBatches, readTimetable, readBody, logSave } from './_db.js';
 import { login, verify } from './_auth.js';
 
 const CATS = ['holiday', 'observance', 'semester', 'assessment', 'techtalk', 'exam', 'admission',
@@ -14,6 +14,9 @@ const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
    counts the department keeps on the learners still on roll, so they are not
    checked against the intake the way graduated and discontinued are. */
 const BS_EXTRA = { active: 1, not_responding: 1, backlogs_lt10: 1, can_complete: 1 };
+
+/* Timetable: what a class slot holds. */
+const TT_FIELDS = { subject: 1, faculty: 1, room: 1 };
 
 class Bad extends Error { constructor(m) { super(m); this.code = 400; } }
 
@@ -281,7 +284,68 @@ async function run(b, who) {
       const batch = txt(b.batch, 40);
       if (b.confirm !== 'DELETE') throw new Bad('Type DELETE to confirm');
       await q`DELETE FROM batch_status WHERE batch = ${batch}`;
+      await q`DELETE FROM timetable WHERE batch = ${batch}`;
       return readBatches();
+    }
+
+    /* ---------- Timetable ---------- */
+
+    case 'setClass': {
+      const batch = txt(b.batch, 40), prog = txt(b.programme, 80);
+      const day = Number(b.day), slot = Number(b.slot);
+      if (!batch || !prog) throw new Bad('Unknown batch or programme');
+      if (![6, 7].includes(day)) throw new Bad('Classes are on Saturday and Sunday');
+      if (!(slot >= 1 && slot <= 4)) throw new Bad('There are four slots in a day');
+      if (!TT_FIELDS[b.field]) throw new Bad('Unknown field');
+      const value = txt(b.value, 200);
+      await q`
+        INSERT INTO timetable (batch, programme, day, slot, updated_by)
+        VALUES (${batch}, ${prog}, ${day}, ${slot}, ${who})
+        ON CONFLICT (batch, programme, day, slot) DO NOTHING`;
+      if (b.field === 'subject')
+        await q`UPDATE timetable SET subject = ${value}, updated_by = ${who}, updated_at = now()
+                WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
+      else if (b.field === 'faculty')
+        await q`UPDATE timetable SET faculty = ${value}, updated_by = ${who}, updated_at = now()
+                WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
+      else
+        await q`UPDATE timetable SET room = ${value}, updated_by = ${who}, updated_at = now()
+                WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
+      /* A slot emptied of everything is removed, so it does not linger. */
+      await q`DELETE FROM timetable
+              WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}
+                AND subject = '' AND faculty = '' AND room = ''`;
+      return readTimetable();
+    }
+
+    case 'clearTimetable': {
+      const batch = txt(b.batch, 40);
+      if (b.confirm !== 'CLEAR') throw new Bad('Type CLEAR to confirm');
+      if (batch) await q`DELETE FROM timetable WHERE batch = ${batch}`;
+      else await q`DELETE FROM timetable`;
+      return readTimetable();
+    }
+
+    /* A timetable workbook: one row for each batch, programme, day and slot. */
+    case 'importTimetable': {
+      const rows = Array.isArray(b.rows) ? b.rows.slice(0, 2000) : [];
+      if (!rows.length) throw new Bad('Nothing to import');
+      let saved = 0;
+      for (const r of rows) {
+        const batch = txt(r.batch, 40), prog = txt(r.programme, 80);
+        const day = Number(r.day), slot = Number(r.slot);
+        if (!batch || !prog || ![6, 7].includes(day) || !(slot >= 1 && slot <= 4)) continue;
+        const subject = txt(r.subject, 200), faculty = txt(r.faculty, 200), room = txt(r.room, 200);
+        if (!subject && !faculty && !room) continue;
+        await q`
+          INSERT INTO timetable (batch, programme, day, slot, subject, faculty, room, updated_by)
+          VALUES (${batch}, ${prog}, ${day}, ${slot}, ${subject}, ${faculty}, ${room}, ${who + ' · timetable file'})
+          ON CONFLICT (batch, programme, day, slot) DO UPDATE SET
+            subject = EXCLUDED.subject, faculty = EXCLUDED.faculty, room = EXCLUDED.room,
+            updated_by = EXCLUDED.updated_by, updated_at = now()`;
+        saved++;
+      }
+      return Object.assign({ saved }, await readTimetable());
     }
 
     case 'addProof': {

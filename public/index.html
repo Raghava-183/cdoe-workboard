@@ -306,6 +306,34 @@ table.bst .rin{width:100%;padding:.35rem .5rem}
 table.bst td.rm,table.bst th.rm{min-width:16rem}
 table.bst .pv{display:none}
 
+/* Timetable */
+table.ttt{table-layout:fixed}
+table.ttt th[scope="row"]{width:9.5rem;font-weight:700;white-space:nowrap;vertical-align:middle}
+table.ttt thead th{white-space:normal}
+table.ttt thead th b{display:block;font-size:.8rem}
+table.ttt thead th small{display:block;font-weight:600;color:var(--ink-3);font-size:.72rem;margin-top:.1rem}
+table.ttt td.tt{vertical-align:top;position:relative;padding:.4rem .5rem}
+table.ttt td.tt.empty{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--rule-2) 6px,var(--rule-2) 7px)}
+table.ttt td.tt b{display:block;font-weight:700;font-size:.86rem;line-height:1.25}
+table.ttt td.tt span{display:block;color:var(--ink-2);font-size:.8rem;margin-top:.1rem}
+table.ttt td.tt i{display:block;color:var(--ink-3);font-size:.75rem;font-style:normal}
+table.ttt .tin{width:100%;padding:.3rem .45rem;font-size:.84rem;border:1.5px solid var(--rule);border-radius:var(--r-sm);background:var(--white)}
+table.ttt .tin.sub{font-weight:650}
+table.ttt .tin.fac{margin-top:.25rem;color:var(--ink-2)}
+table.ttt .tin:focus{outline:2px solid var(--red);outline-offset:-1px;border-color:var(--red)}
+table.ttt .tst{position:absolute;top:.3rem;right:.45rem;font-size:.72rem;color:var(--ok);font-weight:700;pointer-events:none}
+table.ttt .tst.err{color:var(--red-deep)}
+table.ttt tbody tr:hover td{background:#FFFCFC}
+.bsec tr.bad td{background:var(--red-tint)}
+.bsec header p b.warn{color:var(--red-deep)}
+@media (max-width:900px){ table.ttt th[scope="row"]{width:auto} }
+@media print{
+  table.ttt .tin{border:0;padding:0;background:transparent;font-size:.8rem}
+  table.ttt .tin.fac{margin-top:0}
+  table.ttt .tst{display:none}
+  table.ttt td.tt.empty{background:none}
+}
+
 /* By batch */
 .bsec{margin-bottom:var(--s5)}
 .bsec header{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem .8rem;margin-bottom:.5rem}
@@ -430,6 +458,7 @@ h4.impb:first-child{margin-top:0}
     <button class="tab" role="tab" id="tab-activity" data-tab="activity" aria-selected="false"><b>Activity Calendar</b><small>Webinars, Tech Talks, meetings and their proof</small></button>
     <button class="tab" role="tab" id="tab-coe" data-tab="coe" aria-selected="false"><b>Calendar of Events</b><small>Semesters, assessments, examinations and holidays</small></button>
     <button class="tab" role="tab" id="tab-batches" data-tab="batches" aria-selected="false"><b>Batches Status</b><small>Learners admitted, graduated and remarks</small></button>
+    <button class="tab" role="tab" id="tab-timetable" data-tab="timetable" aria-selected="false"><b>Timetable</b><small>Weekend classes, faculty and slots</small></button>
     <span class="band-date" id="bandDate"></span>
   </div>
 </nav>
@@ -548,7 +577,8 @@ function toast(msg, bad){
    State and server
    ═══════════════════════════════════════════════════════════════ */
 const state = { tab: "activity", cal: "activity", month: null, view: "month", filter: "all", q: "", showCancelled: false,
-                bsRows: [], bsBatch: "all", session: null, events: [], proofs: [], loadError: null };
+                bsRows: [], bsBatch: "all", ttRows: [], ttShape: [], ttBatch: "", ttBy: "batch",
+                session: null, events: [], proofs: [], loadError: null };
 try { const s = JSON.parse(localStorage.getItem("cdoe.session") || "null"); if (s && s.token && s.exp > Date.now()) state.session = s; } catch {}
 
 async function get(what, params = {}){
@@ -652,16 +682,30 @@ function readHash(){
     state.bsBatch = (want === "all" || state.bsRows.some(r => r.batch === want)) ? want : "all";
     return;
   }
+  if (tab === "timetable") {
+    state.tab = "timetable";
+    state.ttBy = extra === "faculty" || arg === "faculty" ? "faculty" : "batch";
+    if (state.ttBy === "batch") {
+      const want = arg ? decodeURIComponent(arg) : "";
+      const list = ttBatches();
+      state.ttBatch = list.includes(want) ? want : (list.includes(state.ttBatch) ? state.ttBatch : (list[0] || ""));
+    }
+    return;
+  }
   if (!CALS[tab]) tab = "activity";                       // older #calendar and #tracker links land here
   state.tab = state.cal = tab;
   const [lo, hi] = bounds(tab), now = todayISO().slice(0, 7);
   let m = /^\d{4}-\d{2}$/.test(arg || "") ? arg : (now >= lo && now <= hi ? now : lo);
   if (m < lo) m = lo; if (m > hi) m = hi;
   state.month = m;
-  state.view = extra === "list" ? "list" : extra === "batch" ? "batch" : "month";
+  /* The Calendar of Events has no month grid: a batch's sessions run for
+     weeks at a time, so it reads far better batch by batch. */
+  state.view = extra === "list" ? "list" : extra === "batch" ? "batch" : (tab === "coe" ? "batch" : "month");
+  if (tab === "coe" && state.view === "month") state.view = "batch";
 }
 const hashFor = (cal = state.cal, month = state.month, view = state.view) =>
-  state.tab === "batches" ? "#batches/" + encodeURIComponent(state.bsBatch)
+  state.tab === "batches"   ? "#batches/" + encodeURIComponent(state.bsBatch)
+  : state.tab === "timetable" ? "#timetable/" + (state.ttBy === "faculty" ? "faculty" : encodeURIComponent(state.ttBatch))
                           : "#" + cal + "/" + month + (view === "list" ? "/list" : view === "batch" ? "/batch" : "");
 function go(h){ if (location.hash !== h) location.hash = h; else route(); }
 function route(){
@@ -669,7 +713,8 @@ function route(){
   const want = hashFor();
   if (location.hash !== want) history.replaceState(null, "", want);
   $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === state.tab)));
-  document.title = (state.tab === "batches" ? "Batches Status" : C().name) + " — CDOE Workboard";
+  document.title = (state.tab === "batches" ? "Batches Status"
+                  : state.tab === "timetable" ? "Timetable" : C().name) + " — CDOE Workboard";
   render();
 }
 
@@ -688,6 +733,7 @@ function render(){
   const v = $("#view");
   if (state.loadError) { v.innerHTML = `<div class="notice">${esc(state.loadError)}</div>`; return; }
   if (state.tab === "batches") v.innerHTML = batchesView();
+  else if (state.tab === "timetable") v.innerHTML = timetableView();
   else {
     if (!state.month) return;
     v.innerHTML = head() + (state.view === "month" ? strip() : "") + toolbar() + (evOf().length ? "" : welcome()) +
@@ -711,7 +757,7 @@ function head(){
     : `<h2>${esc(C().name)} <span>${rangeLabel(lo, hi)}</span></h2>`}
     <span class="grow"></span>
     <div class="seg" role="group" aria-label="View">
-      <button data-view="month" aria-pressed="${state.view === "month"}">Month</button>
+      ${state.cal === "coe" ? "" : `<button data-view="month" aria-pressed="${state.view === "month"}">Month</button>`}
       <button data-view="batch" aria-pressed="${state.view === "batch"}">${state.cal === "coe" ? "By batch" : "By group"}</button>
       <button data-view="list" aria-pressed="${state.view === "list"}">List &amp; report</button>
     </div>
@@ -1508,6 +1554,330 @@ async function bsDelBatch(){
   } catch (e) { toast(e.message, true); }
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   Timetable — the weekend classes, which repeat every week of the
+   semester, so they are filled in once rather than date by date.
+   ═══════════════════════════════════════════════════════════════ */
+const SLOTS = [[1, "8:15 – 10:00 AM"], [2, "10:00 AM – 12:00 PM"],
+               [3, "12:00 – 2:00 PM"], [4, "2:00 – 4:00 PM"]];
+const DAYS = [[6, "Saturday"], [7, "Sunday"]];
+
+function ttBatches(){
+  const seen = new Map();
+  state.ttShape.forEach(r => { if (!seen.has(r.batch)) seen.set(r.batch, r.sort_order); });
+  state.ttRows.forEach(r => { if (!seen.has(r.batch)) seen.set(r.batch, 99); });
+  return [...seen.keys()].sort((a, b) => bsOrder(b) - bsOrder(a) || a.localeCompare(b));
+}
+function ttProgs(batch){
+  const first = new Map();
+  state.ttShape.filter(r => r.batch === batch).forEach(r => { if (!first.has(r.programme)) first.set(r.programme, r.sort_order); });
+  state.ttRows.filter(r => r.batch === batch).forEach(r => { if (!first.has(r.programme)) first.set(r.programme, 99); });
+  if (!first.size) bsProgs().forEach((p, i) => first.set(p, i + 1));
+  return [...first.entries()].sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0])).map(e => e[0]);
+}
+const ttAt = (batch, prog, day, slot) =>
+  state.ttRows.find(r => r.batch === batch && r.programme === prog && r.day === day && r.slot === slot);
+const ttOf = batch => state.ttRows.filter(r => r.batch === batch);
+const slotName = n => (SLOTS.find(s => s[0] === n) || [0, "Slot " + n])[1];
+const dayName = n => (DAYS.find(d => d[0] === n) || [0, "Day " + n])[1];
+
+function timetableView(){
+  const ed = canEdit(), faculty = state.ttBy === "faculty";
+  const batches = ttBatches();
+  if (!batches.length) {
+    return ttHead() + `<section class="welcome"><div class="ico">${ICON.cap}</div><div>
+      <h3>No batches yet</h3><p>The timetable follows the batches on <b>Batches Status</b>. Add a batch there first.</p></div></section>`;
+  }
+  return ttHead() + ttStrip() + ttBar() + (faculty ? ttByFaculty() : ttGrid(state.ttBatch, ed));
+}
+
+function ttHead(){
+  const faculty = state.ttBy === "faculty";
+  return `<div class="calhead">
+    <img class="fslogo" src="/logo.jpg" alt="Vignan's Online">
+    <h2>${faculty ? `By <span>faculty</span>` : `${esc(bsLabel(state.ttBatch) || "Timetable")} <span>classes</span>`}</h2>
+    <span class="grow"></span>
+    <div class="seg" role="group" aria-label="View">
+      <button data-tt="batch" aria-pressed="${!faculty}">By batch</button>
+      <button data-tt="faculty" aria-pressed="${faculty}">By faculty</button>
+    </div>
+    <button class="btn line" id="ttPrint">${ICON.print}Print</button>
+    <button class="btn line" id="ttXl">${ICON.down}Download Excel</button>
+  </div>`;
+}
+
+function ttStrip(){
+  if (state.ttBy === "faculty") return "";
+  return `<nav class="strip" aria-label="Batches">
+    ${ttBatches().map(b => {
+      const n = ttOf(b).length;
+      return `<button data-tt="${esc(b)}" ${b === state.ttBatch ? 'aria-current="true"' : ""}
+          aria-label="${esc(bsLabel(b))}: ${n} ${n === 1 ? "class" : "classes"}">
+        <span class="yr has">${esc(bsLabel(b).split(" ").pop())}</span>
+        <span class="mn">${esc(String(b).split(/[-\s/]/)[0])}<small>${n || ""}</small></span>
+        <span class="bar"><i style="width:${Math.round(n / (ttProgs(b).length * 8) * 100)}%"></i></span></button>`;
+    }).join("")}
+  </nav>`;
+}
+
+function ttBar(){
+  if (!canEdit() || state.ttBy === "faculty") return "";
+  return `<div class="bar2"><span class="grow"></span>
+    <button class="btn line" id="ttImp">${ICON.up}Import timetable</button>
+    <button class="btn line" id="ttTpl">${ICON.down}Blank sheet</button>
+    <button class="btn line danger" id="ttClear">${ICON.bin}Clear ${esc(bsLabel(state.ttBatch))}</button>
+  </div>`;
+}
+
+/* The counts above the grid. Kept apart so that saving one box can refresh
+   them without redrawing the tables and taking the cursor with it. */
+function ttTiles(batch){
+  const progs = ttProgs(batch), rows = ttOf(batch);
+  const filled = rows.length, total = progs.length * 8;
+  const staff = [...new Set(rows.map(r => r.faculty).filter(Boolean))];
+  return `<div class="meter"><div class="big">${filled}<span> of ${total}</span></div>
+      <div class="track"><i style="width:${total ? Math.round(filled / total * 100) : 0}%;background:var(--ok)"></i></div>
+      <div class="hint">slots filled in</div></div>
+    <div class="meter"><div class="big">${staff.length}</div><div class="hint">${staff.length === 1 ? "faculty member" : "faculty members"} on this batch</div></div>
+    <div class="meter"><div class="big">${progs.length}</div><div class="hint">programmes</div></div>`;
+}
+
+/* One batch: Saturday and Sunday, each programme against the four slots. */
+function ttGrid(batch, ed){
+  const progs = ttProgs(batch);
+  const cell = (prog, day, slot) => {
+    const r = ttAt(batch, prog, day, slot) || {};
+    const k = `data-b="${esc(batch)}" data-p="${esc(prog)}" data-d="${day}" data-s="${slot}"`;
+    if (!ed) {
+      if (!r.subject && !r.faculty) return `<td class="tt empty"></td>`;
+      return `<td class="tt"><b>${esc(r.subject || "—")}</b>${r.faculty ? `<span>${esc(r.faculty)}</span>` : ""}${r.room ? `<i>${esc(r.room)}</i>` : ""}</td>`;
+    }
+    return `<td class="tt">
+      <input class="tin sub" ${k} data-f="subject" value="${esc(r.subject || "")}" placeholder="Subject" aria-label="Subject, ${esc(prog)} ${dayName(day)} slot ${slot}">
+      <input class="tin fac" ${k} data-f="faculty" value="${esc(r.faculty || "")}" placeholder="Faculty" aria-label="Faculty, ${esc(prog)} ${dayName(day)} slot ${slot}" list="ttStaff">
+      <span class="tst" ${k}></span></td>`;
+  };
+  const table = (day) => `
+    <h3 class="sub" data-day="${day}">${dayName(day)}</h3>
+    <div class="rtable"><table class="ttt">
+      <thead><tr><th>Programme</th>${SLOTS.map(([n, label]) =>
+        `<th><b>Slot ${n}</b><small>${label}</small></th>`).join("")}</tr></thead>
+      <tbody>${progs.map(p => `<tr><th scope="row">${esc(p)}</th>
+        ${SLOTS.map(([n]) => cell(p, day, n)).join("")}</tr>`).join("")}</tbody>
+    </table></div>`;
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Weekend Timetable — ${esc(bsLabel(batch))}</h2>
+      <p>The same classes run every weekend of the semester. Printed ${esc(longDate(todayISO()))}.</p></div>
+    <div class="tiles" id="ttTiles">${ttTiles(batch)}</div>
+    ${ed ? "" : `<div class="notice">You are viewing. <a href="#" id="ttSignLink">Sign in</a> to fill in the timetable.</div>`}
+    ${ed ? `<datalist id="ttStaff">${[...new Set(state.ttRows.map(r => r.faculty).filter(Boolean))].sort()
+      .map(f => `<option value="${esc(f)}">`).join("")}</datalist>` : ""}
+    ${DAYS.map(([d]) => table(d)).join("")}
+    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a subject and the faculty name; each box saves by itself. Leave a slot empty if there is no class. Names you have used before are offered as you type.</p>` : ""}`;
+}
+
+/* Every faculty member and where they are expected, across all batches. */
+function ttByFaculty(){
+  const by = new Map();
+  state.ttRows.filter(r => r.faculty).forEach(r => {
+    if (!by.has(r.faculty)) by.set(r.faculty, []);
+    by.get(r.faculty).push(r);
+  });
+  if (!by.size) return `<div class="notice">No faculty names yet. Choose <b>By batch</b> and fill in the timetable.</div>`;
+  const names = [...by.keys()].sort((a, b) => a.localeCompare(b));
+  const clash = r => by.get(r.faculty).filter(x => x.day === r.day && x.slot === r.slot).length > 1;
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Weekend Timetable — by faculty</h2>
+      <p>Printed ${esc(longDate(todayISO()))}.</p></div>
+    ${names.map(f => {
+      const list = by.get(f).slice().sort((a, b) => a.day - b.day || a.slot - b.slot);
+      const hrs = list.length * 2;
+      const bad = list.filter(clash).length;
+      return `<section class="bsec" style="--tone:var(--ink-2)">
+        <header><h3><i></i>${esc(f)}</h3>
+          <p>${list.length} ${list.length === 1 ? "class" : "classes"} a weekend · about ${hrs} hours${
+            bad ? ` · <b class="warn">${bad} clash${bad === 1 ? "" : "es"}</b>` : ""}</p></header>
+        <div class="rtable"><table>
+          <thead><tr><th>Day</th><th>Slot</th><th>Batch</th><th>Programme</th><th>Subject</th></tr></thead>
+          <tbody>${list.map(r => `<tr class="${clash(r) ? "bad" : ""}">
+            <td class="nowrap">${esc(dayName(r.day))}</td>
+            <td class="nowrap">${esc(slotName(r.slot))}</td>
+            <td class="nowrap">${esc(bsLabel(r.batch))}</td>
+            <td>${esc(r.programme)}</td>
+            <td><b>${esc(r.subject || "—")}</b></td></tr>`).join("")}</tbody>
+        </table></div>
+      </section>`;
+    }).join("")}
+    <p class="hint">A row in red means that faculty member is down for two classes in the same slot.</p>`;
+}
+
+/* ── Saving one class box ────────────────────────────────────── */
+let ttTimer = null;
+async function ttSave(el){
+  if (!el || !el.isConnected) return;
+  clearTimeout(ttTimer); ttTimer = null;
+  const { b, p, d, s, f } = el.dataset;
+  const mark = (txt, bad) => {
+    const st = el.parentNode && el.parentNode.querySelector(".tst");
+    if (st) { st.textContent = txt; st.classList.toggle("err", !!bad); }
+  };
+  mark("…");
+  try {
+    const j = await post("setClass", { batch: b, programme: p, day: Number(d), slot: Number(s), field: f, value: el.value });
+    state.ttRows = j.timetable || state.ttRows; state.ttShape = j.shape || state.ttShape;
+    /* The counts and the strip change, but the tables must not be redrawn
+       while someone is typing in them. */
+    const tiles = $("#ttTiles"); if (tiles) tiles.innerHTML = ttTiles(b);
+    $$(".strip [data-tt]").forEach(btn => {
+      const n = ttOf(btn.dataset.tt).length, small = btn.querySelector("small"), bar = btn.querySelector(".bar i");
+      if (small) small.textContent = n || "";
+      if (bar) bar.style.width = Math.round(n / (ttProgs(btn.dataset.tt).length * 8) * 100) + "%";
+    });
+    const list = $("#ttStaff");
+    if (list) list.innerHTML = [...new Set(state.ttRows.map(r => r.faculty).filter(Boolean))].sort()
+      .map(x => `<option value="${esc(x)}">`).join("");
+    mark("✓");
+    setTimeout(() => mark(""), 1500);
+  } catch (e) { mark("!", true); toast(e.message, true); }
+}
+
+function ttClear(){
+  const b = state.ttBatch;
+  if (!ttOf(b).length) { toast("Nothing to clear in " + bsLabel(b)); return; }
+  if (!confirm(`Clear the whole timetable for ${bsLabel(b)}?\n\nAll ${ttOf(b).length} classes for this batch are removed. This cannot be undone.`)) return;
+  post("clearTimetable", { batch: b, confirm: "CLEAR" })
+    .then(j => { state.ttRows = j.timetable || []; render(); toast("Cleared " + bsLabel(b)); })
+    .catch(e => toast(e.message, true));
+}
+
+/* ── Importing and the blank sheet ───────────────────────────── */
+function ttImport(){
+  const d = $("#dlg"); d.className = ""; delete d.dataset.evid; delete d.dataset.edit;
+  d.innerHTML = `<div class="dh"><div><h3>Import a timetable</h3>
+      <p>One row for each class: batch, programme, day, slot, subject and faculty.</p></div>
+    <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+  <div class="db"><div class="drop">
+    <b>The columns it reads</b>
+    <ol>
+      <li><b>Batch</b> — as on Batches Status: Jul-26, Jan-26</li>
+      <li><b>Programme</b> — BBA, MBA (General), MBA (Finance), MBA HRM, BCA, MCA</li>
+      <li><b>Day</b> — Saturday or Sunday</li>
+      <li><b>Slot</b> — 1, 2, 3 or 4, or the time such as 8:15 – 10:00 AM</li>
+      <li><b>Subject</b>, <b>Faculty</b> and, if you use it, <b>Room</b></li>
+    </ol>
+    <b>Download the blank sheet</b> gives this with every batch and programme already listed, so the classes just need typing in.
+    <div class="row"><label class="btn">${ICON.up}Choose file<input type="file" id="ttFile" accept=".xlsx,.xls,.csv" hidden></label>
+      <button class="btn line" id="ttTpl2">Download the blank sheet</button></div>
+  </div><p class="hint">You see every class before anything is saved. A class already there is replaced by the one in the file.</p></div>`;
+  if (!d.open) d.showModal();
+}
+
+const TT_DAY = s => { const t = String(s || "").trim().toLowerCase();
+  if (/^(sat|6)/.test(t)) return 6; if (/^(sun|7)/.test(t)) return 7; return 0; };
+const TT_SLOT = s => {
+  const t = String(s || "").trim();
+  const n = Number(t.replace(/[^0-9]/g, "").slice(0, 1));
+  if (/8[:.]?15/.test(t)) return 1;
+  if (/^10|10[:.]?00\s*am/i.test(t) && /12/.test(t)) return 2;
+  if (/^12/.test(t)) return 3;
+  if (/^2\b|2[:.]?00\s*pm/i.test(t)) return 4;
+  return n >= 1 && n <= 4 ? n : 0;
+};
+
+async function ttHandleFile(file){
+  try {
+    if (!window.XLSX) throw new Error("The spreadsheet reader is still loading. Try again in a moment.");
+    const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+    const out = [], skipped = [];
+    wb.SheetNames.forEach(name => {
+      const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: "" });
+      let hr = -1, col = {};
+      for (let i = 0; i < Math.min(aoa.length, 15) && hr < 0; i++) {
+        const head = (aoa[i] || []).map(x => String(x || "").trim().toLowerCase());
+        const find = rx => head.findIndex(h => rx.test(h));
+        const c = { batch: find(/^batch/), programme: find(/programme|program|course/), day: find(/^day/),
+                    slot: find(/^slot|^time/), subject: find(/subject|paper/), faculty: find(/faculty|teacher|staff/),
+                    room: find(/room|hall|link/) };
+        if (c.batch >= 0 && c.day >= 0 && c.slot >= 0) { hr = i; col = c; }
+      }
+      if (hr < 0) return;
+      for (let i = hr + 1; i < aoa.length; i++) {
+        const row = aoa[i] || [], g = k => col[k] >= 0 ? String(row[col[k]] ?? "").trim() : "";
+        const subject = g("subject"), faculty = g("faculty");
+        if (!subject && !faculty) continue;
+        const day = TT_DAY(g("day")), slot = TT_SLOT(g("slot"));
+        const batch = g("batch"), programme = g("programme");
+        if (!batch || !programme || !day || !slot) { skipped.push(i + 1); continue; }
+        out.push({ batch, programme, day, slot, subject, faculty, room: g("room") });
+      }
+    });
+    const d = $("#dlg");
+    d.innerHTML = `<div class="dh"><div><h3>Check before saving</h3>
+      <p>${esc(file.name)}: ${out.length} ${out.length === 1 ? "class" : "classes"} found.</p></div>
+      <button class="iconbtn x" data-close aria-label="Close">✕</button></div>
+    <div class="db">
+      ${!out.length ? `<div class="notice">No classes were read. The sheet needs <b>Batch</b>, <b>Day</b> and <b>Slot</b> columns, and a Subject or Faculty to go with them.</div>` : ""}
+      ${skipped.length ? `<div class="notice">Rows ${esc(skipped.slice(0, 12).join(", "))}${skipped.length > 12 ? "…" : ""} are missing a batch, programme, day or slot and will be skipped.</div>` : ""}
+      ${out.length ? `<div class="ftable"><table><thead><tr><th>Batch</th><th>Programme</th><th>Day</th><th>Slot</th><th>Subject</th><th>Faculty</th></tr></thead>
+        <tbody>${out.slice(0, 300).map(r => `<tr><td class="nowrap">${esc(bsLabel(r.batch))}</td><td class="nowrap">${esc(r.programme)}</td>
+          <td class="nowrap">${esc(dayName(r.day))}</td><td class="nowrap">${esc(slotName(r.slot))}</td>
+          <td>${esc(r.subject)}</td><td class="nowrap">${esc(r.faculty)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    </div>
+    <div class="df"><button class="btn line" id="ttBack">Back</button>
+      <button class="btn" id="ttGo" ${out.length ? "" : "disabled"}>Save ${out.length} ${out.length === 1 ? "class" : "classes"}</button></div>`;
+    $("#ttBack").onclick = ttImport;
+    $("#ttGo").onclick = async () => {
+      $("#ttGo").disabled = true;
+      try {
+        const j = await post("importTimetable", { rows: out });
+        state.ttRows = j.timetable || []; state.ttShape = j.shape || state.ttShape;
+        readHash(); history.replaceState(null, "", hashFor()); render(); d.close();
+        toast(`Saved ${j.saved} ${j.saved === 1 ? "class" : "classes"}`);
+      } catch (e) { toast(e.message, true); $("#ttGo").disabled = false; }
+    };
+  } catch (e) { toast("Could not read that file: " + e.message, true); report("timetable import: " + e.message); }
+}
+
+function ttTemplate(){
+  if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
+  const rows = [["Batch", "Programme", "Day", "Slot", "Subject", "Faculty", "Room"]];
+  const b = state.ttBatch;
+  ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(([s, label]) => {
+    const r = ttAt(b, p, d, s) || {};
+    rows.push([b, p, dn, label, r.subject || "", r.faculty || "", r.room || ""]);
+  })));
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws["!cols"] = [{ wch: 10 }, { wch: 18 }, { wch: 11 }, { wch: 22 }, { wch: 38 }, { wch: 26 }, { wch: 16 }];
+  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Timetable");
+  XLSX.writeFile(wb, `CDOE-Timetable-${String(b).replace(/[^A-Za-z0-9-]/g, "")}.xlsx`);
+}
+
+function ttExcel(){
+  if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
+  const wb = XLSX.utils.book_new();
+  const all = [["Batch", "Programme", "Day", "Slot", "Subject", "Faculty", "Room", "Last changed by"]];
+  ttBatches().forEach(b => ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(([s, label]) => {
+    const r = ttAt(b, p, d, s);
+    if (r) all.push([bsLabel(b), p, dn, label, r.subject, r.faculty, r.room, r.by || ""]);
+  }))));
+  const w1 = XLSX.utils.aoa_to_sheet(all);
+  w1["!cols"] = [{ wch: 14 }, { wch: 18 }, { wch: 11 }, { wch: 22 }, { wch: 38 }, { wch: 26 }, { wch: 14 }, { wch: 18 }];
+  w1["!autofilter"] = { ref: "A1:H" + all.length };
+  XLSX.utils.book_append_sheet(wb, w1, "All classes");
+
+  const by = new Map();
+  state.ttRows.filter(r => r.faculty).forEach(r => { if (!by.has(r.faculty)) by.set(r.faculty, []); by.get(r.faculty).push(r); });
+  const fac = [["Faculty", "Classes a weekend", "Hours", "Where"]];
+  [...by.keys()].sort().forEach(f => {
+    const l = by.get(f).slice().sort((a, b) => a.day - b.day || a.slot - b.slot);
+    fac.push([f, l.length, l.length * 2,
+      l.map(r => `${dayName(r.day).slice(0, 3)} slot ${r.slot} · ${bsLabel(r.batch)} ${r.programme}`).join("; ")]);
+  });
+  const w2 = XLSX.utils.aoa_to_sheet(fac);
+  w2["!cols"] = [{ wch: 26 }, { wch: 18 }, { wch: 8 }, { wch: 90 }];
+  XLSX.utils.book_append_sheet(wb, w2, "By faculty");
+  XLSX.writeFile(wb, "CDOE-Timetable.xlsx");
+}
+
 /* ── Importing the batch-wise status report ──────────────────── */
 function bsImport(){
   const d = $("#dlg"); d.className = ""; delete d.dataset.evid; delete d.dataset.edit;
@@ -1669,6 +2039,18 @@ document.addEventListener("click", async ev => {
   if (t.id === "bsPrint") { window.print(); return; }
   if (t.id === "bsXl") { bsExcel(); return; }
   if (t.id === "bsImp") { bsImport(); return; }
+  if (t.id === "ttXl") { ttExcel(); return; }
+  if (t.id === "ttPrint") { window.print(); return; }
+  if (t.id === "ttImp") { ttImport(); return; }
+  if (t.id === "ttTpl" || t.id === "ttTpl2") { ttTemplate(); return; }
+  if (t.id === "ttClear") { ttClear(); return; }
+  if (t.id === "ttSignLink") { ev.preventDefault(); openSignIn(); return; }
+  if (t.dataset.tt) {
+    const v = t.dataset.tt;
+    if (v === "batch" || v === "faculty") state.ttBy = v;
+    else { state.ttBy = "batch"; state.ttBatch = v; }
+    go(hashFor()); return;
+  }
   if (t.id === "bsAdd") { bsAddBatch(); return; }
   if (t.id === "bsGo") { bsDoAdd(); return; }
   if (t.id === "bsDel") { bsDelBatch(); return; }
@@ -1720,6 +2102,7 @@ document.addEventListener("input", ev => {
   if (t.id === "evNotes" && canEdit()) { const id = $("#dlg").dataset.evid; const st = $("#notesState"); if (st) st.textContent = "Typing…"; clearTimeout(notesTimer); notesTimer = setTimeout(() => saveNotes(id), 1000); return; }
   if (t.id === "dConfirm") { countDeleteMany(); return; }
   if (t.matches(".rin")) { const el = t; clearTimeout(bsTimer); bsTimer = setTimeout(() => bsSave(el), 1200); return; }
+  if (t.matches(".tin")) { const el = t; clearTimeout(ttTimer); ttTimer = setTimeout(() => ttSave(el), 1000); return; }
   if (t.id === "fQ") {
     state.q = t.value;
     clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
@@ -1732,8 +2115,10 @@ document.addEventListener("change", ev => {
   if (t.id === "dFrom" || t.id === "dTo" || t.id === "dKeep") { countDeleteMany(); return; }
   if (t.id === "pUrl") { attachLink($("#dlg").dataset.evid, { auto:true }); return; }
   if (t.matches(".nin, .rin")) { bsSave(t); return; }
+  if (t.matches(".tin")) { ttSave(t); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
   if (t.id === "bsFile" && t.files[0]) { bsHandleFile(t.files[0]); return; }
+  if (t.id === "ttFile" && t.files[0]) { ttHandleFile(t.files[0]); return; }
 });
 document.addEventListener("paste", ev => {
   if (ev.target.id === "pUrl" || ev.target.id === "pLbl") setTimeout(() => attachLink($("#dlg").dataset.evid, { auto:true }), 60);
@@ -1743,7 +2128,7 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Enter" && (ev.target.id === "pUrl" || ev.target.id === "pLbl")) { ev.preventDefault(); attachLink($("#dlg").dataset.evid); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); return; }
   if (ev.key === "Enter" && ev.target.id === "bsName") { ev.preventDefault(); bsDoAdd(); return; }
-  if (ev.key === "Enter" && ev.target.matches(".nin, .rin")) { ev.preventDefault(); ev.target.blur(); return; }
+  if (ev.key === "Enter" && ev.target.matches(".nin, .rin, .tin")) { ev.preventDefault(); ev.target.blur(); return; }
   if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && !$("#dlg").open && !$("#dlgSign").open && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && state.view === "month") {
     const b = $(`.calhead [aria-label="${ev.key === "ArrowLeft" ? "Previous" : "Next"} month"]`); if (b && !b.disabled) b.click();
   }
@@ -1767,8 +2152,10 @@ window.addEventListener("hashchange", route);
       .then(r => { if (r.status === 401) signOut(true); }).catch(() => {});
   }
   try {
-    const [c, b] = await Promise.all([get("calendar"), get("batches")]);
-    applyCalendar(c); state.bsRows = b.batches || []; state.loadError = null;
+    const [c, b, t] = await Promise.all([get("calendar"), get("batches"), get("timetable")]);
+    applyCalendar(c); state.bsRows = b.batches || [];
+    state.ttRows = t.timetable || []; state.ttShape = t.shape || [];
+    state.loadError = null;
   } catch (e) { state.loadError = e.message; }
   route();
 })();

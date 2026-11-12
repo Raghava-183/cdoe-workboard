@@ -201,6 +201,23 @@ export async function ensure() {
     await q`INSERT INTO meta (k, v) VALUES ('batches_jul22', 'yes') ON CONFLICT (k) DO NOTHING`;
   }
 
+  /* Nov 2026: the weekend class timetable. One row for each batch, programme,
+     day and slot, because the classes repeat every weekend of the semester —
+     so it is filled in once rather than for every date. */
+  await q`
+    CREATE TABLE IF NOT EXISTS timetable (
+      batch      TEXT NOT NULL,
+      programme  TEXT NOT NULL,
+      day        SMALLINT NOT NULL,          -- 6 Saturday, 7 Sunday
+      slot       SMALLINT NOT NULL,          -- 1 to 4, the four class slots
+      subject    TEXT NOT NULL DEFAULT '',
+      faculty    TEXT NOT NULL DEFAULT '',
+      room       TEXT NOT NULL DEFAULT '',
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (batch, programme, day, slot)
+    )`;
+
   /* Every save attempt, kept so problems can be traced. */
   await q`
     CREATE TABLE IF NOT EXISTS audit (
@@ -241,6 +258,20 @@ export async function readBatches() {
            to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS at
     FROM batch_status ORDER BY sort_order, programme`;
   return { batches: rows };
+}
+
+export async function readTimetable() {
+  const rows = await q`
+    SELECT batch, programme, day, slot, subject, faculty, room, updated_by AS by,
+           to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS at
+    FROM timetable
+    WHERE subject <> '' OR faculty <> '' OR room <> ''
+    ORDER BY batch, programme, day, slot`;
+  /* The programmes and batches come from the intake table, so the timetable
+     offers the same list as Batches Status rather than one of its own. */
+  const shape = await q`
+    SELECT DISTINCT batch, programme, sort_order FROM batch_status ORDER BY sort_order, batch`;
+  return { timetable: rows, shape };
 }
 
 export function readBody(req) {

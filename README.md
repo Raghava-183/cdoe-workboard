@@ -2,13 +2,26 @@
 
 Centre for Distance and Online Education · Vignan's Foundation for Science, Technology & Research
 
-Three tabs:
+Four tabs:
 
 - **Activity Calendar**: webinars, Tech Talks, workshops, meetings and other department activities. Each one has a status (planned or completed), notes and Google Drive proof links.
 - **Calendar of Events (COE)**: the academic calendar, covering semester commencements, continuous-assessment windows, end-semester examinations and holidays. Every entry carries its batch (for example *July 2025 – Sem III*), and the cards are coloured by batch.
-- **Batches Status**: how many learners each programme admitted in each batch, how many have graduated, and a remarks line. Opens on a table of every batch; choose one to fill in the numbers.
+- **Batches Status**: how many learners each programme admitted in each batch, how many discontinued, how many have finished, and a remarks line. Opens on a table of every batch; choose one to fill in the numbers.
+- **Timetable**: the weekend classes — which faculty takes which subject, for each batch and programme, in each of the four Saturday and Sunday slots.
 
-Both calendars have a month view with a strip of every month, a list view you can print, full-screen mode for a projector, and Import, Add and Delete. Anyone with the link can view. Editing needs the department login. Vercel serves the site and Neon Postgres stores the data.
+The Activity Calendar has a month view, a by-group view and a list you can print. The Calendar of Events has **By batch** and **List & report**: a batch's live sessions run for weeks at a time, so a month grid buried the academic dates and was dropped from that tab. Both have Import, Add and Delete, and full-screen mode for a projector. Anyone with the link can view. Editing needs the department login. Vercel serves the site and Neon Postgres stores the data.
+
+## Timetable
+
+The classes repeat every weekend of the semester, so the timetable is filled in once rather than date by date.
+
+**By batch** gives Saturday and Sunday, each programme against the four slots: 8:15–10:00, 10:00–12:00, 12:00–2:00 and 2:00–4:00. Type a subject and a faculty name into a slot and it saves by itself; **✓** appears in the corner. Leave a slot empty when there is no class. Faculty names already used are offered as you type.
+
+**By faculty** turns it round: every faculty member with their weekend, across all batches, and roughly how many hours it comes to. A row in **red** means that person is down for two classes in the same slot.
+
+**Import timetable** reads a sheet with Batch, Programme, Day, Slot, Subject, Faculty and Room columns. **Blank sheet** gives you that sheet for the batch you are looking at, with whatever is already on the site filled in. **Clear** empties one batch after you confirm.
+
+The batches and programmes come from Batches Status, so adding a batch there adds it here too, and deleting one removes its timetable with it.
 
 ---
 
@@ -120,7 +133,7 @@ SELECT * FROM audit ORDER BY id DESC LIMIT 50;
 ```
 api/_db.js          database connection, tables, upgrades
 api/_auth.js        login check and sign-in token
-api/read.js         GET  /api/read   (calendars, batches, health check)
+api/read.js         GET  /api/read   (calendars, batches, timetable, health check)
 api/save.js         POST /api/save   (every change)
 public/index.html   the site
 public/importer.js  reads the calendar workbooks
