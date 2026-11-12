@@ -232,8 +232,11 @@ async function run(b, who) {
         for (const r of (Array.isArray(sheet.rows) ? sheet.rows.slice(0, 40) : [])) {
           const prog = txt(r.programme, 80);
           if (!prog) continue;
+          /* A figure the file has no column for is not sent at all, and must
+             keep whatever is already recorded. Only what arrived is written. */
+          const has = k => Object.prototype.hasOwnProperty.call(r, k);
           const adm = num(r.admitted), grad = num(r.graduated) ?? 0, disc = num(r.discontinued);
-          if (adm !== null && grad + (disc || 0) > adm) {
+          if (has('admitted') && adm !== null && has('graduated') && grad + (disc || 0) > adm) {
             skipped.push(`${batch} ${prog}: ${grad} graduated + ${disc} discontinued is more than ${adm} admitted`);
             continue;
           }
@@ -245,9 +248,13 @@ async function run(b, who) {
           }
           await q`
             UPDATE batch_status SET
-              admitted = ${adm}, graduated = ${grad}, discontinued = ${disc},
-              active = ${num(r.active)}, not_responding = ${num(r.notResponding)},
-              backlogs_lt10 = ${num(r.backlogs)}, can_complete = ${num(r.canComplete)},
+              admitted       = CASE WHEN ${has('admitted')}::boolean      THEN ${adm}::int  ELSE admitted       END,
+              graduated      = CASE WHEN ${has('graduated')}::boolean     THEN ${grad}::int ELSE graduated      END,
+              discontinued   = CASE WHEN ${has('discontinued')}::boolean  THEN ${disc}::int ELSE discontinued   END,
+              active         = CASE WHEN ${has('active')}::boolean        THEN ${num(r.active)}::int        ELSE active         END,
+              not_responding = CASE WHEN ${has('notResponding')}::boolean THEN ${num(r.notResponding)}::int ELSE not_responding END,
+              backlogs_lt10  = CASE WHEN ${has('backlogs')}::boolean      THEN ${num(r.backlogs)}::int      ELSE backlogs_lt10  END,
+              can_complete   = CASE WHEN ${has('canComplete')}::boolean   THEN ${num(r.canComplete)}::int   ELSE can_complete   END,
               updated_by = ${who + ' · batch report'}, updated_at = now()
             WHERE batch = ${batch} AND programme = ${prog}`;
           changed++;

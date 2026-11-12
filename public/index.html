@@ -305,6 +305,21 @@ table.bst .pc{font-size:.78rem;color:var(--ink-2);margin-left:.45rem;font-varian
 table.bst .rin{width:100%;padding:.35rem .5rem}
 table.bst td.rm,table.bst th.rm{min-width:16rem}
 table.bst .pv{display:none}
+
+/* By batch */
+.bsec{margin-bottom:var(--s5)}
+.bsec header{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem .8rem;margin-bottom:.5rem}
+.bsec h3{font-size:1.1rem;font-variation-settings:"wdth" 84;letter-spacing:-.01em;margin:0;display:flex;align-items:center;gap:.5rem}
+.bsec h3 i{width:11px;height:11px;border-radius:3px;background:var(--tone);flex:none}
+.bsec header p{margin:0;font-size:.84rem;color:var(--ink-2)}
+.bsec header p b{color:var(--ink);font-weight:700}
+.bsec header .track{display:inline-block;width:7rem;height:6px;background:var(--rule-2);border-radius:4px;overflow:hidden;margin-left:auto}
+.bsec header .track i{display:block;height:100%;background:var(--tone);border-radius:4px}
+.bsec .rtable{border-left:4px solid var(--tone)}
+.bsec table{min-width:0}
+.bsec tr.past td{color:var(--ink-3)}
+.bsec tr.past td b{font-weight:600}
+@media print{ .bsec{break-inside:avoid} .bsec header .track{display:none} }
 table.bst td.st{font-size:.72rem;color:var(--ink-3);white-space:nowrap;width:9rem}
 table.bst td.st .err{color:var(--red-deep);font-weight:650;white-space:normal;display:inline-block}
 table.bst tbody tr:hover td{background:#FFFCFC}
@@ -643,11 +658,11 @@ function readHash(){
   let m = /^\d{4}-\d{2}$/.test(arg || "") ? arg : (now >= lo && now <= hi ? now : lo);
   if (m < lo) m = lo; if (m > hi) m = hi;
   state.month = m;
-  state.view = extra === "list" ? "list" : "month";
+  state.view = extra === "list" ? "list" : extra === "batch" ? "batch" : "month";
 }
 const hashFor = (cal = state.cal, month = state.month, view = state.view) =>
   state.tab === "batches" ? "#batches/" + encodeURIComponent(state.bsBatch)
-                          : "#" + cal + "/" + month + (view === "list" ? "/list" : "");
+                          : "#" + cal + "/" + month + (view === "list" ? "/list" : view === "batch" ? "/batch" : "");
 function go(h){ if (location.hash !== h) location.hash = h; else route(); }
 function route(){
   readHash();
@@ -675,8 +690,10 @@ function render(){
   if (state.tab === "batches") v.innerHTML = batchesView();
   else {
     if (!state.month) return;
-    v.innerHTML = head() + strip() + toolbar() + (evOf().length ? "" : welcome()) +
-      (state.view === "list" ? drawList() : `<div class="gridwrap">${drawMonth()}</div>` + below());
+    v.innerHTML = head() + (state.view === "month" ? strip() : "") + toolbar() + (evOf().length ? "" : welcome()) +
+      (state.view === "list" ? drawList()
+       : state.view === "batch" ? drawByBatch()
+       : `<div class="gridwrap">${drawMonth()}</div>` + below());
   }
   const cur = $(".strip [aria-current='true']"), s = $(".strip");
   if (cur && s && s.scrollWidth > s.clientWidth) s.scrollLeft = cur.offsetLeft - s.clientWidth / 2 + cur.clientWidth / 2;
@@ -695,9 +712,10 @@ function head(){
     <span class="grow"></span>
     <div class="seg" role="group" aria-label="View">
       <button data-view="month" aria-pressed="${state.view === "month"}">Month</button>
+      <button data-view="batch" aria-pressed="${state.view === "batch"}">${state.cal === "coe" ? "By batch" : "By group"}</button>
       <button data-view="list" aria-pressed="${state.view === "list"}">List &amp; report</button>
     </div>
-    ${state.view === "list" ? `<button class="btn line" id="printBtn">${ICON.print}Print</button>` : ""}
+    ${state.view === "month" ? "" : `<button class="btn line" id="printBtn">${ICON.print}Print</button>`}
     <button class="btn ${fs ? "" : "line"}" id="fsBtn" title="${fs ? "Press Esc to exit" : "Show only the calendar, filling the screen"}">${fs ? "✕ Exit full screen" : ICON.full + "Full screen"}</button>
   </div>`;
 }
@@ -879,6 +897,58 @@ function drawList(){
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
     <div class="rtable"><table><thead><tr><th>Date</th><th>${act ? "Activity" : "Event"}</th><th>Type</th><th>${act ? "For" : "Batch"}</th>${act ? "<th>Status</th><th>Proof</th>" : ""}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+}
+
+/* Every batch, one after another, with its whole semester laid out —
+   what each batch has coming, without hunting through the months. */
+function drawByBatch(){
+  const evs = visible(), coe = state.cal === "coe";
+  if (!evs.length) return `<div class="notice">Nothing to show.${evOf().length ? " Clear the search or choose All in the filter." : ""}</div>`;
+
+  /* An entry naming two batches belongs under each of them. */
+  const groups = new Map();
+  const loose = [];
+  evs.forEach(e => {
+    const bs = batchesOf(e);
+    if (!bs.length) { loose.push(e); return; }
+    bs.forEach(b => { if (!groups.has(b)) groups.set(b, []); groups.get(b).push(e); });
+  });
+  const order = coe ? allBatches() : [...groups.keys()].sort((a, b) => a.localeCompare(b));
+  const names = order.filter(b => groups.has(b));
+  [...groups.keys()].forEach(b => { if (!names.includes(b)) names.push(b); });
+
+  const today = todayISO();
+  const section = (name, list) => {
+    const rows = list.slice().sort((a, b) => a.start.localeCompare(b.start) || a.title.localeCompare(b.title));
+    const from = rows[0].start, to = rows.reduce((m, e) => e.end > m ? e.end : m, rows[0].end);
+    const done = rows.filter(e => e.end < today).length;
+    const next = rows.find(e => e.end >= today);
+    const tn = coe && name ? batchTone(name) : "var(--ink-2)";
+    return `<section class="bsec" style="--tone:${tn}">
+      <header>
+        <h3><i></i>${esc(name || "Everyone")}</h3>
+        <p>${rows.length} ${rows.length === 1 ? "date" : "dates"} · ${esc(shortDate(from))} ${from.slice(0, 4)} to ${esc(shortDate(to))} ${to.slice(0, 4)}${
+          next ? (next.start <= today ? ` · now: <b>${esc(next.title)}</b>, to ${esc(shortDate(next.end))}`
+                                      : ` · next: <b>${esc(next.title)}</b> on ${esc(shortDate(next.start))}`)
+               : " · all done"}</p>
+        ${rows.length > 1 ? `<span class="track" title="${done} of ${rows.length} past"><i style="width:${Math.round(done / rows.length * 100)}%"></i></span>` : ""}
+      </header>
+      <div class="rtable"><table><thead><tr><th>Date</th><th>${coe ? "Event" : "Activity"}</th><th>Type</th></tr></thead>
+      <tbody>${rows.map(e => `<tr class="ev${e.end < today ? " past" : ""}" data-ev="${e.id}">
+        <td class="nowrap">${esc(e.start === e.end ? shortDate(e.start) + " " + e.start.slice(0, 4)
+                                                   : shortDate(e.start) + " – " + shortDate(e.end) + " " + e.end.slice(0, 4))}</td>
+        <td><b>${esc(e.title)}</b>${e.cancelled ? ` <span class="pill red">Cancelled</span>` : ""}${
+          e.notes ? `<div class="hint">${esc(e.notes.slice(0, 120))}${e.notes.length > 120 ? "…" : ""}</div>` : ""}</td>
+        <td><span class="typ" style="--tone:${tone(e.category)}"><i></i>${esc(TYPES[e.category]?.short || "Event")}</span></td>
+      </tr>`).join("")}</tbody></table></div>
+    </section>`;
+  };
+
+  const [lo, hi] = bounds();
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE ${esc(C().name)} by ${coe ? "batch" : "group"}, ${rangeLabel(lo, hi)}</h2>
+      <p>Printed ${esc(longDate(todayISO()))}.</p></div>
+    ${names.map(b => section(b, groups.get(b))).join("")}
+    ${loose.length ? section("", loose) : ""}`;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1475,7 +1545,9 @@ async function bsHandleFile(file){
       const was = bsAt(sh.batch, r.programme);
       if (!progs.has(r.programme)) newProgs.add(r.programme);
       r._diff = [];
-      FIELDS.forEach(([k, label]) => {
+      /* Only the figures this sheet carries a column for are compared; the
+         rest are not mentioned in the file, so they stay as they are. */
+      FIELDS.filter(([k]) => !sh.cols || sh.cols.includes(k)).forEach(([k, label]) => {
         /* Finished is stored as 0 rather than blank, so a blank in the file
            against a 0 on the site is not a change. */
         const now = k === "graduated" ? (r[k] ?? 0) : r[k];
@@ -1522,9 +1594,11 @@ async function bsHandleFile(file){
     $("#bsImpGo").onclick = async () => {
       $("#bsImpGo").disabled = true;
       try {
-        const payload = found.map(sh => ({ batch: sh.batch, rows: sh.rows.map(r => ({
-          programme: r.programme, admitted: r.admitted, discontinued: r.discontinued, graduated: r.graduated,
-          active: r.active, notResponding: r.notResponding, backlogs: r.backlogs, canComplete: r.canComplete })) }));
+        const payload = found.map(sh => ({ batch: sh.batch, rows: sh.rows.map(r => {
+          const out = { programme: r.programme };
+          FIELDS.forEach(([k]) => { if (!sh.cols || sh.cols.includes(k)) out[k] = r[k]; });
+          return out;
+        }) }));
         const j = await post("importBatches", { batches: payload });
         state.bsRows = j.batches || state.bsRows;
         if (state.bsBatch !== "all" && !bsBatches().includes(state.bsBatch)) state.bsBatch = "all";

@@ -293,15 +293,17 @@
      not have the same columns in the same order, and a heading split over
      two or three rows ("Total Admitted" / "(a)") still reads.          */
 
+  /* The order matters: each column takes the first heading it answers to, so
+     "remaining" is offered "To be Graduated" before "graduated" can claim it. */
   const BS_COLS = [
-    ["admitted",     /total admitted|admissions|\badmitted\b/],
+    ["admitted",     /total admitted|admissions|\badmitted\b|\benrolled\b|\benrolment\b|\benrollment\b/],
     ["discontinued", /discontinu|dropped|dropout/],
+    ["remaining",    /remaining|to be graduat|yet to/],
     ["graduated",    /completed degree|completed|graduat/],
-    ["remaining",    /remaining/],
     ["active",       /\bactive\b/],
     ["notResponding",/not respond/],
     ["backlogs",     /backlog/],
-    ["canComplete",  /can complete|complete by/]
+    ["canComplete",  /can complete|complete by|willing/]
   ];
   /* Headings that look like a figure but are not one. */
   const BS_SKIP = /sanction|s\.?\s*no\b|^%$|percent/;
@@ -335,13 +337,17 @@
   /* A figure in the report. "-" and "" mean nothing is recorded.
      "22(1)" means 22, with 1 noted in brackets; the report's own totals
      use the 22, so that is what is read, and the bracket is kept as a note. */
+  /* `blank` marks a cell nobody filled in, as against a dash, which is someone
+     saying there was no intake. A row of blanks carries no information, so it
+     must never overwrite figures already recorded. */
   function bsNum(v) {
-    if (v === null || v === undefined) return { n: null, note: "" };
-    if (typeof v === "number") return Number.isFinite(v) ? { n: Math.round(v), note: "" } : { n: null, note: "" };
+    if (v === null || v === undefined) return { n: null, note: "", blank: true };
+    if (typeof v === "number") return Number.isFinite(v) ? { n: Math.round(v), note: "" } : { n: null, note: "", blank: true };
     const s = clean(v);
-    if (!s || /^[-–—]+$/.test(s) || /^(na|n\/a|nil)$/i.test(s)) return { n: null, note: "" };
+    if (!s) return { n: null, note: "", blank: true };
+    if (/^[-–—]+$/.test(s) || /^(na|n\/a|nil)$/i.test(s)) return { n: null, note: "" };
     const m = s.match(/^(\d+)\s*(?:\((\d+)\))?$/);
-    if (!m) return { n: null, note: "" };
+    if (!m) return { n: null, note: "", blank: true };
     return { n: Number(m[1]), note: m[2] ? m[2] + " more in brackets on the sheet" : "" };
   }
 
@@ -386,13 +392,16 @@
 
         const figures = () => {
           const rec = {}, notes = [];
+          let filled = 0;
           for (const [key] of BS_COLS) {
             if (col[key] === undefined) { rec[key] = null; continue; }
-            const { n, note } = bsNum(row[col[key]]);
+            const { n, note, blank } = bsNum(row[col[key]]);
             rec[key] = n;
+            if (!blank) filled++;
             if (note) notes.push(key === "admitted" ? note : key + ": " + note);
           }
           rec.note = notes.join("; ");
+          rec.empty = filled === 0;
           return rec;
         };
         if (/^total\b/i.test(label)) { totalRow = totalRow || figures(); continue; }
@@ -400,19 +409,58 @@
         const programme = bsProgName(label);
         if (!programme) continue;
         if (found.some(x => x.programme === programme)) continue;
-        found.push(Object.assign({ programme }, figures()));
+        const f = figures();
+        /* A programme row nobody filled in is left out, so a blank template
+           sheet cannot wipe the figures already on the site. */
+        if (f.empty) continue;
+        delete f.empty;
+        found.push(Object.assign({ programme }, f));
       }
+
+      /* "Active" is used for two different things. In the batch-wise status
+         report it is part of the learners still on roll. In the batches
+         information sheet it is everyone who did not discontinue, graduates
+         included — which the site works out for itself. Telling them apart by
+         the heading is impossible, so the figures decide. Most of the rows
+         settle it, not all, so one mistyped figure cannot swing the reading. */
+      const notes = [];
+      let hasActive = col.active !== undefined;
+      const act = found.filter(r => r.active !== null && r.admitted !== null && r.discontinued !== null);
+      const derived = act.filter(r => r.active === r.admitted - r.discontinued).length;
+      if (act.length >= 2 && derived >= Math.ceil(act.length * 0.7)) {
+        found.forEach(r => { r.active = null; });
+        hasActive = false;
+        notes.push('the "Active" column is the learners who did not discontinue, which the site works out itself, so it is not imported');
+      }
+
+      /* Which figures this sheet actually carries. A sheet with no column for
+         something is silent about it, not saying it is empty, so whatever is
+         already recorded for it has to be left alone. */
+      const cols = BS_COLS.map(([k]) => k)
+        .filter(k => k !== "remaining" && (k === "active" ? hasActive : col[k] !== undefined));
 
       /* The sheet's own Total row is checked against its columns, so a slip in
          the spreadsheet is reported rather than quietly carried over. */
-      const totals = [];
-      if (totalRow) for (const [key, label] of [["admitted", "Total Admitted"], ["discontinued", "Discontinued"],
-                                                ["graduated", "Completed Degree"]]) {
+      const totals = notes.slice();
+      if (totalRow) for (const [key, label] of [["admitted", "learners"], ["discontinued", "discontinued"],
+                                                ["graduated", "finished"]]) {
         const adds = found.reduce((a, r) => a + (r[key] || 0), 0);
         if (totalRow[key] !== null && totalRow[key] !== adds)
-          totals.push(`${label} adds up to ${adds}, but the sheet's Total row says ${totalRow[key]}`);
+          totals.push(`the ${label} column adds up to ${adds}, but the sheet's Total row says ${totalRow[key]}`);
       }
-      if (found.length) out.push({ batch: bsBatchName(sh.name), sheet: sh.name, rows: found, totals });
+
+      /* Each row is checked against itself, because a figure that does not fit
+         its neighbours is a slip somewhere and the department should see it
+         before it reaches the site. */
+      for (const r of found) {
+        if (r.admitted === null) continue;
+        const stayed = r.admitted - (r.discontinued || 0);
+        if (r.graduated !== null && r.graduated > stayed)
+          totals.push(`${r.programme}: ${r.graduated} finished, but only ${stayed} of the ${r.admitted} learners stayed`);
+        if (r.remaining !== null && r.graduated !== null && r.remaining !== stayed - r.graduated)
+          totals.push(`${r.programme}: ${r.admitted} − ${r.discontinued || 0} − ${r.graduated} is ${stayed - r.graduated}, but the sheet says ${r.remaining} are left`);
+      }
+      if (found.length) out.push({ batch: bsBatchName(sh.name), sheet: sh.name, rows: found, totals, cols });
     }
     return out;
   }
