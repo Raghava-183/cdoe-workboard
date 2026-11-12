@@ -424,7 +424,7 @@ h4.impb:first-child{margin-top:0}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span>Version 6 Nov 2026</span>
+    <span>Version 12 Nov 2026</span>
   </div>
 </footer>
 
@@ -766,13 +766,25 @@ function drawMonth(){
   return html + `</div>` + legend();
 }
 
+/* How many days an entry covers. A semester's live-session block runs for
+   weeks, and drawing it on every one of those days buries the month. */
+const BLOCK_DAYS = 8;
+const spanDays = e => Math.round((D(e.end) - D(e.start)) / 86400000) + 1;
+
 function chip(e, day){
-  const hol = isHol(e), cont = e.start !== day && D(day).getDay() !== 1 && day !== state.month + "-01";
+  const hol = isHol(e);
+  const start = e.start === day, monday = D(day).getDay() === 1, first = day === state.month + "-01";
+  const end = e.end === day;
+  /* A long block is drawn where it starts, at the top of each week and where
+     it ends; the days in between are left clear. Shorter entries are
+     unchanged, so a weekend session or an exam window still reads as a run. */
+  if (!hol && spanDays(e) > BLOCK_DAYS && !start && !monday && !first && !end) return "";
+  const cont = !start && !monday && !first;
   const n = proofsOf(e.id).length, tn = cardTone(e);
   const tip = esc(e.title + " — " + spanText(e) + (e.audience ? " — " + e.audience : ""));
   const cls = ["chipb", hol ? "hol" : "", cont ? "cont" : "", e.cancelled ? "gone" : ""].filter(Boolean).join(" ");
   if (hol) return `<button class="${cls}" data-ev="${e.id}" title="${tip}"><span class="tx">${esc(e.title)}</span></button>`;
-  if (cont) return `<button class="${cls}" style="--tone:${tn}" data-ev="${e.id}" title="${tip}"><span class="tx">↳ ${esc(e.title)}</span></button>`;
+  if (cont) return `<button class="${cls}" style="--tone:${tn}" data-ev="${e.id}" title="${tip}"><span class="tx">${end ? "⇥" : "↳"} ${esc(e.title)}${end ? " ends" : ""}</span></button>`;
   const foot = [e.start !== e.end ? `<span class="rg">${esc(rangeText(e))}</span>` : "",
                 e.audience ? `<span class="au">${esc(e.audience)}</span>` : "",
                 n ? `<span class="pf">🔗 ${n} ${n > 1 ? "links" : "link"}</span>` : ""].join("");
