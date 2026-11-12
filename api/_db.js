@@ -217,6 +217,21 @@ export async function ensure() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       PRIMARY KEY (batch, programme, day, slot)
     )`;
+  await q`ALTER TABLE timetable ADD COLUMN IF NOT EXISTS code TEXT NOT NULL DEFAULT ''`;
+
+  /* When each slot runs. Saturday and Sunday keep different hours, and a batch
+     can differ from the rest, so the times live beside the classes rather than
+     being fixed in the page. A slot with no row here falls back to the default. */
+  await q`
+    CREATE TABLE IF NOT EXISTS tt_slots (
+      batch      TEXT NOT NULL,
+      day        SMALLINT NOT NULL,
+      slot       SMALLINT NOT NULL,
+      label      TEXT NOT NULL DEFAULT '',
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (batch, day, slot)
+    )`;
 
   /* Every save attempt, kept so problems can be traced. */
   await q`
@@ -262,16 +277,17 @@ export async function readBatches() {
 
 export async function readTimetable() {
   const rows = await q`
-    SELECT batch, programme, day, slot, subject, faculty, room, updated_by AS by,
+    SELECT batch, programme, day, slot, subject, code, faculty, room, updated_by AS by,
            to_char(updated_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS at
     FROM timetable
-    WHERE subject <> '' OR faculty <> '' OR room <> ''
+    WHERE subject <> '' OR faculty <> '' OR room <> '' OR code <> ''
     ORDER BY batch, programme, day, slot`;
+  const slots = await q`SELECT batch, day, slot, label FROM tt_slots ORDER BY batch, day, slot`;
   /* The programmes and batches come from the intake table, so the timetable
      offers the same list as Batches Status rather than one of its own. */
   const shape = await q`
     SELECT DISTINCT batch, programme, sort_order FROM batch_status ORDER BY sort_order, batch`;
-  return { timetable: rows, shape };
+  return { timetable: rows, slots, shape };
 }
 
 export function readBody(req) {

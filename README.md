@@ -15,11 +15,15 @@ The Activity Calendar has a month view, a by-group view and a list you can print
 
 The classes repeat every weekend of the semester, so the timetable is filled in once rather than date by date.
 
-**By batch** gives Saturday and Sunday, each programme against the four slots: 8:15–10:00, 10:00–12:00, 12:00–2:00 and 2:00–4:00. Type a subject and a faculty name into a slot and it saves by itself; **✓** appears in the corner. Leave a slot empty when there is no class. Faculty names already used are offered as you type.
+**By batch** gives Saturday and Sunday, each programme against four slots. Type a subject, the course code and a faculty name into a slot and each box saves by itself; **✓** appears in the corner. Leave a slot empty when there is no class. Faculty names already used are offered as you type.
+
+**The slot times are set per batch and per day**, in the boxes under the slot headings, because Saturday and Sunday keep different hours — Saturday afternoon and evening, Sunday from the morning. Change one and it saves straight away. A batch with no times of its own falls back to the usual ones.
 
 **By faculty** turns it round: every faculty member with their weekend, across all batches, and roughly how many hours it comes to. A row in **red** means that person is down for two classes in the same slot.
 
-**Import timetable** reads a sheet with Batch, Programme, Day, Slot, Subject, Faculty and Room columns. **Blank sheet** gives you that sheet for the batch you are looking at, with whatever is already on the site filled in. **Clear** empties one batch after you confirm.
+**Import timetable** reads a sheet with Batch, Programme, Day, Slot, Time, Subject, Course code, Faculty and Room columns. If the sheet gives times but no slot numbers, the times for each day are put in order and numbered, so any timings read correctly. The times in the file become the slot headings. **Blank sheet** gives you that sheet for the batch you are looking at, with whatever is already on the site filled in. **Clear** empties one batch after you confirm.
+
+Faculty contact numbers are deliberately not stored. Anyone with the link can read this site without signing in, and personal numbers have no business being on a public page.
 
 The batches and programmes come from Batches Status, so adding a batch there adds it here too, and deleting one removes its timetable with it.
 

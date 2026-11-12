@@ -319,7 +319,13 @@ table.ttt td.tt span{display:block;color:var(--ink-2);font-size:.8rem;margin-top
 table.ttt td.tt i{display:block;color:var(--ink-3);font-size:.75rem;font-style:normal}
 table.ttt .tin{width:100%;padding:.3rem .45rem;font-size:.84rem;border:1.5px solid var(--rule);border-radius:var(--r-sm);background:var(--white)}
 table.ttt .tin.sub{font-weight:650}
-table.ttt .tin.fac{margin-top:.25rem;color:var(--ink-2)}
+table.ttt .tin.cod,table.ttt .tin.fac{margin-top:.25rem;color:var(--ink-2)}
+table.ttt .tin.cod{font-size:.76rem;font-variant-numeric:tabular-nums}
+table.ttt td.tt i.cd{color:var(--ink-3);font-size:.74rem;font-variant-numeric:tabular-nums}
+table.ttt .slin{width:100%;margin-top:.2rem;padding:.2rem .35rem;font-size:.74rem;font-weight:600;
+  border:1.5px dashed var(--rule);border-radius:var(--r-sm);background:var(--white);color:var(--ink-2);text-align:center}
+table.ttt .slin:focus{outline:2px solid var(--red);outline-offset:-1px;border-style:solid;border-color:var(--red)}
+table.ttt .slin.ok{border-color:var(--ok);color:var(--ok)}
 table.ttt .tin:focus{outline:2px solid var(--red);outline-offset:-1px;border-color:var(--red)}
 table.ttt .tst{position:absolute;top:.3rem;right:.45rem;font-size:.72rem;color:var(--ok);font-weight:700;pointer-events:none}
 table.ttt .tst.err{color:var(--red-deep)}
@@ -328,8 +334,10 @@ table.ttt tbody tr:hover td{background:#FFFCFC}
 .bsec header p b.warn{color:var(--red-deep)}
 @media (max-width:900px){ table.ttt th[scope="row"]{width:auto} }
 @media print{
-  table.ttt .tin{border:0;padding:0;background:transparent;font-size:.8rem}
-  table.ttt .tin.fac{margin-top:0}
+  table.ttt .tin,table.ttt .slin{border:0;padding:0;background:transparent;font-size:.8rem}
+  table.ttt .tin.cod,table.ttt .tin.fac{margin-top:0}
+  table.ttt .slin{font-size:.72rem;text-align:left}
+  table.ttt .tin::placeholder,table.ttt .slin::placeholder{color:transparent}
   table.ttt .tst{display:none}
   table.ttt td.tt.empty{background:none}
 }
@@ -577,7 +585,7 @@ function toast(msg, bad){
    State and server
    ═══════════════════════════════════════════════════════════════ */
 const state = { tab: "activity", cal: "activity", month: null, view: "month", filter: "all", q: "", showCancelled: false,
-                bsRows: [], bsBatch: "all", ttRows: [], ttShape: [], ttBatch: "", ttBy: "batch",
+                bsRows: [], bsBatch: "all", ttRows: [], ttSlots: [], ttShape: [], ttBatch: "", ttBy: "batch",
                 session: null, events: [], proofs: [], loadError: null };
 try { const s = JSON.parse(localStorage.getItem("cdoe.session") || "null"); if (s && s.token && s.exp > Date.now()) state.session = s; } catch {}
 
@@ -599,6 +607,11 @@ async function post(action, payload = {}){
   if (r.status === 401) { signOut(true); openSignIn(j.error); }
   if (!j.ok) throw new Error(j.error || "Could not save");
   return j;
+}
+function applyTimetable(j){
+  state.ttRows = j.timetable || [];
+  state.ttSlots = j.slots || [];
+  state.ttShape = j.shape || state.ttShape;
 }
 function applyCalendar(j){ state.events = (j.events || []).map(e => ({ ...e, cal: e.cal || "activity" })); state.proofs = j.proofs || []; batchTones = null; }
 function report(msg){
@@ -1558,9 +1571,16 @@ async function bsDelBatch(){
    Timetable — the weekend classes, which repeat every week of the
    semester, so they are filled in once rather than date by date.
    ═══════════════════════════════════════════════════════════════ */
-const SLOTS = [[1, "8:15 – 10:00 AM"], [2, "10:00 AM – 12:00 PM"],
-               [3, "12:00 – 2:00 PM"], [4, "2:00 – 4:00 PM"]];
+/* Four slots a day. The times are set per batch and per day, because Saturday
+   and Sunday keep different hours; these are only the fallback. */
+const SLOTS = [1, 2, 3, 4];
+const SLOT_FALLBACK = { 6: ["2:00 – 3:00 PM", "3:30 – 4:30 PM", "5:00 – 6:00 PM", "6:30 – 7:30 PM"],
+                        7: ["10:00 – 11:00 AM", "11:30 – 12:30 PM", "2:00 – 3:00 PM", "3:30 – 4:30 PM"] };
 const DAYS = [[6, "Saturday"], [7, "Sunday"]];
+const slotLabel = (batch, day, slot) => {
+  const r = state.ttSlots.find(x => x.batch === batch && x.day === day && x.slot === slot);
+  return (r && r.label) || (SLOT_FALLBACK[day] || [])[slot - 1] || "Slot " + slot;
+};
 
 function ttBatches(){
   const seen = new Map();
@@ -1578,7 +1598,8 @@ function ttProgs(batch){
 const ttAt = (batch, prog, day, slot) =>
   state.ttRows.find(r => r.batch === batch && r.programme === prog && r.day === day && r.slot === slot);
 const ttOf = batch => state.ttRows.filter(r => r.batch === batch);
-const slotName = n => (SLOTS.find(s => s[0] === n) || [0, "Slot " + n])[1];
+const slotName = (n, batch, day) => batch ? slotLabel(batch, day, n)
+  : (SLOT_FALLBACK[day] || [])[n - 1] || "Slot " + n;
 const dayName = n => (DAYS.find(d => d[0] === n) || [0, "Day " + n])[1];
 
 function timetableView(){
@@ -1649,21 +1670,25 @@ function ttGrid(batch, ed){
     const r = ttAt(batch, prog, day, slot) || {};
     const k = `data-b="${esc(batch)}" data-p="${esc(prog)}" data-d="${day}" data-s="${slot}"`;
     if (!ed) {
-      if (!r.subject && !r.faculty) return `<td class="tt empty"></td>`;
-      return `<td class="tt"><b>${esc(r.subject || "—")}</b>${r.faculty ? `<span>${esc(r.faculty)}</span>` : ""}${r.room ? `<i>${esc(r.room)}</i>` : ""}</td>`;
+      if (!r.subject && !r.faculty && !r.code) return `<td class="tt empty"></td>`;
+      return `<td class="tt"><b>${esc(r.subject || "—")}</b>${r.code ? `<i class="cd">${esc(r.code)}</i>` : ""}${
+        r.faculty ? `<span>${esc(r.faculty)}</span>` : ""}${r.room ? `<i>${esc(r.room)}</i>` : ""}</td>`;
     }
     return `<td class="tt">
       <input class="tin sub" ${k} data-f="subject" value="${esc(r.subject || "")}" placeholder="Subject" aria-label="Subject, ${esc(prog)} ${dayName(day)} slot ${slot}">
+      <input class="tin cod" ${k} data-f="code" value="${esc(r.code || "")}" placeholder="Course code" aria-label="Course code, ${esc(prog)} ${dayName(day)} slot ${slot}">
       <input class="tin fac" ${k} data-f="faculty" value="${esc(r.faculty || "")}" placeholder="Faculty" aria-label="Faculty, ${esc(prog)} ${dayName(day)} slot ${slot}" list="ttStaff">
       <span class="tst" ${k}></span></td>`;
   };
   const table = (day) => `
     <h3 class="sub" data-day="${day}">${dayName(day)}</h3>
     <div class="rtable"><table class="ttt">
-      <thead><tr><th>Programme</th>${SLOTS.map(([n, label]) =>
-        `<th><b>Slot ${n}</b><small>${label}</small></th>`).join("")}</tr></thead>
+      <thead><tr><th>Programme</th>${SLOTS.map(n => `<th><b>Slot ${n}</b>${
+        ed ? `<input class="slin" data-b="${esc(batch)}" data-d="${day}" data-s="${n}"
+                 value="${esc(slotLabel(batch, day, n))}" aria-label="Time of slot ${n} on ${dayName(day)}">`
+           : `<small>${esc(slotLabel(batch, day, n))}</small>`}</th>`).join("")}</tr></thead>
       <tbody>${progs.map(p => `<tr><th scope="row">${esc(p)}</th>
-        ${SLOTS.map(([n]) => cell(p, day, n)).join("")}</tr>`).join("")}</tbody>
+        ${SLOTS.map(n => cell(p, day, n)).join("")}</tr>`).join("")}</tbody>
     </table></div>`;
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Weekend Timetable — ${esc(bsLabel(batch))}</h2>
       <p>The same classes run every weekend of the semester. Printed ${esc(longDate(todayISO()))}.</p></div>
@@ -1689,20 +1714,19 @@ function ttByFaculty(){
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
     ${names.map(f => {
       const list = by.get(f).slice().sort((a, b) => a.day - b.day || a.slot - b.slot);
-      const hrs = list.length * 2;
       const bad = list.filter(clash).length;
       return `<section class="bsec" style="--tone:var(--ink-2)">
         <header><h3><i></i>${esc(f)}</h3>
-          <p>${list.length} ${list.length === 1 ? "class" : "classes"} a weekend · about ${hrs} hours${
+          <p>${list.length} ${list.length === 1 ? "class" : "classes"} a weekend${
             bad ? ` · <b class="warn">${bad} clash${bad === 1 ? "" : "es"}</b>` : ""}</p></header>
         <div class="rtable"><table>
-          <thead><tr><th>Day</th><th>Slot</th><th>Batch</th><th>Programme</th><th>Subject</th></tr></thead>
+          <thead><tr><th>Day</th><th>Time</th><th>Batch</th><th>Programme</th><th>Subject</th></tr></thead>
           <tbody>${list.map(r => `<tr class="${clash(r) ? "bad" : ""}">
             <td class="nowrap">${esc(dayName(r.day))}</td>
-            <td class="nowrap">${esc(slotName(r.slot))}</td>
+            <td class="nowrap">${esc(slotName(r.slot, r.batch, r.day))}</td>
             <td class="nowrap">${esc(bsLabel(r.batch))}</td>
             <td>${esc(r.programme)}</td>
-            <td><b>${esc(r.subject || "—")}</b></td></tr>`).join("")}</tbody>
+            <td><b>${esc(r.subject || "—")}</b>${r.code ? ` <span class="hint">${esc(r.code)}</span>` : ""}</td></tr>`).join("")}</tbody>
         </table></div>
       </section>`;
     }).join("")}
@@ -1722,7 +1746,7 @@ async function ttSave(el){
   mark("…");
   try {
     const j = await post("setClass", { batch: b, programme: p, day: Number(d), slot: Number(s), field: f, value: el.value });
-    state.ttRows = j.timetable || state.ttRows; state.ttShape = j.shape || state.ttShape;
+    applyTimetable(j);
     /* The counts and the strip change, but the tables must not be redrawn
        while someone is typing in them. */
     const tiles = $("#ttTiles"); if (tiles) tiles.innerHTML = ttTiles(b);
@@ -1739,12 +1763,24 @@ async function ttSave(el){
   } catch (e) { mark("!", true); toast(e.message, true); }
 }
 
+/* The time a slot runs, for this batch and day. */
+async function ttSaveSlot(el){
+  if (!el || !el.isConnected) return;
+  clearTimeout(ttTimer); ttTimer = null;
+  const { b, d, s } = el.dataset;
+  try {
+    const j = await post("setSlotTime", { batch: b, day: Number(d), slot: Number(s), value: el.value });
+    applyTimetable(j);
+    el.classList.add("ok"); setTimeout(() => el.classList.remove("ok"), 1200);
+  } catch (e) { toast(e.message, true); }
+}
+
 function ttClear(){
   const b = state.ttBatch;
   if (!ttOf(b).length) { toast("Nothing to clear in " + bsLabel(b)); return; }
   if (!confirm(`Clear the whole timetable for ${bsLabel(b)}?\n\nAll ${ttOf(b).length} classes for this batch are removed. This cannot be undone.`)) return;
   post("clearTimetable", { batch: b, confirm: "CLEAR" })
-    .then(j => { state.ttRows = j.timetable || []; render(); toast("Cleared " + bsLabel(b)); })
+    .then(j => { applyTimetable(j); render(); toast("Cleared " + bsLabel(b)); })
     .catch(e => toast(e.message, true));
 }
 
@@ -1772,43 +1808,81 @@ function ttImport(){
 
 const TT_DAY = s => { const t = String(s || "").trim().toLowerCase();
   if (/^(sat|6)/.test(t)) return 6; if (/^(sun|7)/.test(t)) return 7; return 0; };
-const TT_SLOT = s => {
-  const t = String(s || "").trim();
-  const n = Number(t.replace(/[^0-9]/g, "").slice(0, 1));
-  if (/8[:.]?15/.test(t)) return 1;
-  if (/^10|10[:.]?00\s*am/i.test(t) && /12/.test(t)) return 2;
-  if (/^12/.test(t)) return 3;
-  if (/^2\b|2[:.]?00\s*pm/i.test(t)) return 4;
-  return n >= 1 && n <= 4 ? n : 0;
-};
+/* A plain 1 to 4 is the slot number. Anything else is a time, and the slots
+   are worked out by putting the day's times in order instead of matching
+   particular hours, so any timings read correctly. */
+const TT_SLOT = s => { const t = String(s || "").trim(); return /^[1-4]$/.test(t) ? Number(t) : 0; };
+/* "2:00 - 3:00 PM" → minutes from midnight of the start. Classes run from the
+   morning to the evening, so an hour before 8 is taken as afternoon. */
+function ttMinutes(label){
+  const m = String(label || "").match(/(\d{1,2})[:.](\d{2})/);
+  if (!m) return -1;
+  let h = Number(m[1]); const mins = Number(m[2]);
+  if (/p\.?m/i.test(String(label)) && h < 12) h += 12;
+  else if (h < 8) h += 12;
+  return h * 60 + mins;
+}
 
 async function ttHandleFile(file){
   try {
     if (!window.XLSX) throw new Error("The spreadsheet reader is still loading. Try again in a moment.");
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
-    const out = [], skipped = [];
+    const out = [], skipped = [], times = [], seenTimes = new Set();
+    const pending = [], order = new Map();
+    const noteTime = (batch, day, slot, label) => {
+      const key = batch + "|" + day + "|" + slot;
+      if (!seenTimes.has(key)) { seenTimes.add(key); times.push({ batch, day, slot, label }); }
+    };
     wb.SheetNames.forEach(name => {
       const aoa = XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: true, defval: "" });
       let hr = -1, col = {};
       for (let i = 0; i < Math.min(aoa.length, 15) && hr < 0; i++) {
         const head = (aoa[i] || []).map(x => String(x || "").trim().toLowerCase());
         const find = rx => head.findIndex(h => rx.test(h));
-        const c = { batch: find(/^batch/), programme: find(/programme|program|course/), day: find(/^day/),
-                    slot: find(/^slot|^time/), subject: find(/subject|paper/), faculty: find(/faculty|teacher|staff/),
+        const c = { batch: find(/^batch/), programme: find(/^programme|^program\b/), day: find(/^day/),
+                    slot: find(/^slot/), time: find(/^time/), subject: find(/^subject|^paper|core course/),
+                    code: find(/course code|^code/), faculty: find(/faculty|teacher|staff/),
                     room: find(/room|hall|link/) };
-        if (c.batch >= 0 && c.day >= 0 && c.slot >= 0) { hr = i; col = c; }
+        if (c.batch >= 0 && c.day >= 0 && (c.slot >= 0 || c.time >= 0)) { hr = i; col = c; }
       }
       if (hr < 0) return;
       for (let i = hr + 1; i < aoa.length; i++) {
         const row = aoa[i] || [], g = k => col[k] >= 0 ? String(row[col[k]] ?? "").trim() : "";
-        const subject = g("subject"), faculty = g("faculty");
-        if (!subject && !faculty) continue;
-        const day = TT_DAY(g("day")), slot = TT_SLOT(g("slot"));
+        const subject = g("subject"), faculty = g("faculty"), code = g("code");
+        const day = TT_DAY(g("day")), time = g("time") || g("slot");
         const batch = g("batch"), programme = g("programme");
-        if (!batch || !programme || !day || !slot) { skipped.push(i + 1); continue; }
-        out.push({ batch, programme, day, slot, subject, faculty, room: g("room") });
+        let slot = TT_SLOT(g("slot"));
+        if (!batch || !day) { if (subject || faculty || code) skipped.push(i + 1); continue; }
+        /* When the sheet gives times rather than slot numbers, the times for
+           that batch and day are collected now and numbered afterwards. */
+        if (!slot && time) {
+          const k = batch + "|" + day;
+          if (!order.has(k)) order.set(k, []);
+          if (!order.get(k).includes(time)) order.get(k).push(time);
+        }
+        if (!subject && !faculty && !code) {
+          if (time && slot) noteTime(batch, day, slot, time);
+          continue;
+        }
+        if (!programme) { skipped.push(i + 1); continue; }
+        if (slot && time) noteTime(batch, day, slot, time);
+        pending.push({ batch, programme, day, slot, time, subject, code, faculty, room: g("room"), row: i + 1 });
       }
     });
+
+    /* Now the slot numbers for anything that only gave a time. */
+    order.forEach(list => list.sort((a, b) => ttMinutes(a) - ttMinutes(b)));
+    pending.forEach(r => {
+      if (!r.slot && r.time) {
+        const list = order.get(r.batch + "|" + r.day) || [];
+        const i = list.indexOf(r.time);
+        if (i >= 0 && i < 4) { r.slot = i + 1; noteTime(r.batch, r.day, r.slot, r.time); }
+      }
+      if (r.slot) out.push({ batch: r.batch, programme: r.programme, day: r.day, slot: r.slot,
+                             subject: r.subject, code: r.code, faculty: r.faculty, room: r.room });
+      else skipped.push(r.row);
+    });
+    skipped.sort((a, b) => a - b);
     const d = $("#dlg");
     d.innerHTML = `<div class="dh"><div><h3>Check before saving</h3>
       <p>${esc(file.name)}: ${out.length} ${out.length === 1 ? "class" : "classes"} found.</p></div>
@@ -1816,10 +1890,14 @@ async function ttHandleFile(file){
     <div class="db">
       ${!out.length ? `<div class="notice">No classes were read. The sheet needs <b>Batch</b>, <b>Day</b> and <b>Slot</b> columns, and a Subject or Faculty to go with them.</div>` : ""}
       ${skipped.length ? `<div class="notice">Rows ${esc(skipped.slice(0, 12).join(", "))}${skipped.length > 12 ? "…" : ""} are missing a batch, programme, day or slot and will be skipped.</div>` : ""}
-      ${out.length ? `<div class="ftable"><table><thead><tr><th>Batch</th><th>Programme</th><th>Day</th><th>Slot</th><th>Subject</th><th>Faculty</th></tr></thead>
-        <tbody>${out.slice(0, 300).map(r => `<tr><td class="nowrap">${esc(bsLabel(r.batch))}</td><td class="nowrap">${esc(r.programme)}</td>
-          <td class="nowrap">${esc(dayName(r.day))}</td><td class="nowrap">${esc(slotName(r.slot))}</td>
-          <td>${esc(r.subject)}</td><td class="nowrap">${esc(r.faculty)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+      ${times.length ? `<div class="notice">${times.length} slot ${times.length === 1 ? "time" : "times"} are in the file and will be set as the headings, such as <b>${esc(times[0].label)}</b> for slot ${times[0].slot} on ${esc(dayName(times[0].day))}.</div>` : ""}
+      ${out.length ? `<div class="ftable"><table><thead><tr><th>Batch</th><th>Programme</th><th>Day</th><th>Time</th><th>Subject</th><th>Faculty</th></tr></thead>
+        <tbody>${out.slice(0, 300).map(r => {
+          const t = (times.find(x => x.batch === r.batch && x.day === r.day && x.slot === r.slot) || {}).label;
+          return `<tr><td class="nowrap">${esc(bsLabel(r.batch))}</td><td class="nowrap">${esc(r.programme)}</td>
+          <td class="nowrap">${esc(dayName(r.day))}</td><td class="nowrap">${esc(t || slotName(r.slot, r.batch, r.day))}</td>
+          <td>${esc(r.subject)}${r.code ? ` <span class="hint">${esc(r.code)}</span>` : ""}</td><td class="nowrap">${esc(r.faculty)}</td></tr>`;
+        }).join("")}</tbody></table></div>` : ""}
     </div>
     <div class="df"><button class="btn line" id="ttBack">Back</button>
       <button class="btn" id="ttGo" ${out.length ? "" : "disabled"}>Save ${out.length} ${out.length === 1 ? "class" : "classes"}</button></div>`;
@@ -1827,26 +1905,27 @@ async function ttHandleFile(file){
     $("#ttGo").onclick = async () => {
       $("#ttGo").disabled = true;
       try {
-        const j = await post("importTimetable", { rows: out });
-        state.ttRows = j.timetable || []; state.ttShape = j.shape || state.ttShape;
+        const j = await post("importTimetable", { rows: out, slots: times });
+        applyTimetable(j);
         readHash(); history.replaceState(null, "", hashFor()); render(); d.close();
-        toast(`Saved ${j.saved} ${j.saved === 1 ? "class" : "classes"}`);
+        toast(`Saved ${j.saved} ${j.saved === 1 ? "class" : "classes"}`
+          + (j.times ? `, and ${j.times} slot times` : ""));
       } catch (e) { toast(e.message, true); $("#ttGo").disabled = false; }
     };
   } catch (e) { toast("Could not read that file: " + e.message, true); report("timetable import: " + e.message); }
 }
 
+const TT_HEAD = ["Batch", "Programme", "Day", "Slot", "Time", "Subject", "Course code", "Faculty", "Room"];
 function ttTemplate(){
   if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
-  const rows = [["Batch", "Programme", "Day", "Slot", "Subject", "Faculty", "Room"]];
+  const rows = [TT_HEAD];
   const b = state.ttBatch;
-  ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(([s, label]) => {
+  ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(s => {
     const r = ttAt(b, p, d, s) || {};
-    rows.push([b, p, dn, label, r.subject || "", r.faculty || "", r.room || ""]);
+    rows.push([b, p, dn, s, slotLabel(b, d, s), r.subject || "", r.code || "", r.faculty || "", r.room || ""]);
   })));
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws["!cols"] = [{ wch: 10 }, { wch: 18 }, { wch: 11 }, { wch: 22 }, { wch: 38 }, { wch: 26 }, { wch: 16 }];
-  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
+  ws["!cols"] = [{ wch: 10 }, { wch: 18 }, { wch: 11 }, { wch: 6 }, { wch: 20 }, { wch: 38 }, { wch: 14 }, { wch: 26 }, { wch: 14 }];
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Timetable");
   XLSX.writeFile(wb, `CDOE-Timetable-${String(b).replace(/[^A-Za-z0-9-]/g, "")}.xlsx`);
 }
@@ -1854,26 +1933,26 @@ function ttTemplate(){
 function ttExcel(){
   if (!window.XLSX) { toast("The spreadsheet tool is still loading. Try again in a moment.", true); return; }
   const wb = XLSX.utils.book_new();
-  const all = [["Batch", "Programme", "Day", "Slot", "Subject", "Faculty", "Room", "Last changed by"]];
-  ttBatches().forEach(b => ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(([s, label]) => {
+  const all = [TT_HEAD.concat("Last changed by")];
+  ttBatches().forEach(b => ttProgs(b).forEach(p => DAYS.forEach(([d, dn]) => SLOTS.forEach(s => {
     const r = ttAt(b, p, d, s);
-    if (r) all.push([bsLabel(b), p, dn, label, r.subject, r.faculty, r.room, r.by || ""]);
+    if (r) all.push([bsLabel(b), p, dn, s, slotLabel(b, d, s), r.subject, r.code, r.faculty, r.room, r.by || ""]);
   }))));
   const w1 = XLSX.utils.aoa_to_sheet(all);
-  w1["!cols"] = [{ wch: 14 }, { wch: 18 }, { wch: 11 }, { wch: 22 }, { wch: 38 }, { wch: 26 }, { wch: 14 }, { wch: 18 }];
-  w1["!autofilter"] = { ref: "A1:H" + all.length };
+  w1["!cols"] = [{ wch: 14 }, { wch: 18 }, { wch: 11 }, { wch: 6 }, { wch: 20 }, { wch: 38 }, { wch: 14 }, { wch: 26 }, { wch: 12 }, { wch: 18 }];
+  w1["!autofilter"] = { ref: "A1:J" + all.length };
   XLSX.utils.book_append_sheet(wb, w1, "All classes");
 
   const by = new Map();
   state.ttRows.filter(r => r.faculty).forEach(r => { if (!by.has(r.faculty)) by.set(r.faculty, []); by.get(r.faculty).push(r); });
-  const fac = [["Faculty", "Classes a weekend", "Hours", "Where"]];
+  const fac = [["Faculty", "Classes a weekend", "Where"]];
   [...by.keys()].sort().forEach(f => {
     const l = by.get(f).slice().sort((a, b) => a.day - b.day || a.slot - b.slot);
-    fac.push([f, l.length, l.length * 2,
-      l.map(r => `${dayName(r.day).slice(0, 3)} slot ${r.slot} · ${bsLabel(r.batch)} ${r.programme}`).join("; ")]);
+    fac.push([f, l.length,
+      l.map(r => `${dayName(r.day).slice(0, 3)} ${slotLabel(r.batch, r.day, r.slot)} · ${bsLabel(r.batch)} ${r.programme}`).join("; ")]);
   });
   const w2 = XLSX.utils.aoa_to_sheet(fac);
-  w2["!cols"] = [{ wch: 26 }, { wch: 18 }, { wch: 8 }, { wch: 90 }];
+  w2["!cols"] = [{ wch: 26 }, { wch: 18 }, { wch: 100 }];
   XLSX.utils.book_append_sheet(wb, w2, "By faculty");
   XLSX.writeFile(wb, "CDOE-Timetable.xlsx");
 }
@@ -2103,6 +2182,7 @@ document.addEventListener("input", ev => {
   if (t.id === "dConfirm") { countDeleteMany(); return; }
   if (t.matches(".rin")) { const el = t; clearTimeout(bsTimer); bsTimer = setTimeout(() => bsSave(el), 1200); return; }
   if (t.matches(".tin")) { const el = t; clearTimeout(ttTimer); ttTimer = setTimeout(() => ttSave(el), 1000); return; }
+  if (t.matches(".slin")) { const el = t; clearTimeout(ttTimer); ttTimer = setTimeout(() => ttSaveSlot(el), 1200); return; }
   if (t.id === "fQ") {
     state.q = t.value;
     clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
@@ -2116,6 +2196,7 @@ document.addEventListener("change", ev => {
   if (t.id === "pUrl") { attachLink($("#dlg").dataset.evid, { auto:true }); return; }
   if (t.matches(".nin, .rin")) { bsSave(t); return; }
   if (t.matches(".tin")) { ttSave(t); return; }
+  if (t.matches(".slin")) { ttSaveSlot(t); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
   if (t.id === "bsFile" && t.files[0]) { bsHandleFile(t.files[0]); return; }
   if (t.id === "ttFile" && t.files[0]) { ttHandleFile(t.files[0]); return; }
@@ -2128,7 +2209,7 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Enter" && (ev.target.id === "pUrl" || ev.target.id === "pLbl")) { ev.preventDefault(); attachLink($("#dlg").dataset.evid); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); return; }
   if (ev.key === "Enter" && ev.target.id === "bsName") { ev.preventDefault(); bsDoAdd(); return; }
-  if (ev.key === "Enter" && ev.target.matches(".nin, .rin, .tin")) { ev.preventDefault(); ev.target.blur(); return; }
+  if (ev.key === "Enter" && ev.target.matches(".nin, .rin, .tin, .slin")) { ev.preventDefault(); ev.target.blur(); return; }
   if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && !$("#dlg").open && !$("#dlgSign").open && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && state.view === "month") {
     const b = $(`.calhead [aria-label="${ev.key === "ArrowLeft" ? "Previous" : "Next"} month"]`); if (b && !b.disabled) b.click();
   }
@@ -2154,7 +2235,7 @@ window.addEventListener("hashchange", route);
   try {
     const [c, b, t] = await Promise.all([get("calendar"), get("batches"), get("timetable")]);
     applyCalendar(c); state.bsRows = b.batches || [];
-    state.ttRows = t.timetable || []; state.ttShape = t.shape || [];
+    applyTimetable(t);
     state.loadError = null;
   } catch (e) { state.loadError = e.message; }
   route();

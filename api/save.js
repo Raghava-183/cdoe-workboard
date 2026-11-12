@@ -16,7 +16,7 @@ const norm = t => String(t || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 const BS_EXTRA = { active: 1, not_responding: 1, backlogs_lt10: 1, can_complete: 1 };
 
 /* Timetable: what a class slot holds. */
-const TT_FIELDS = { subject: 1, faculty: 1, room: 1 };
+const TT_FIELDS = { subject: 1, code: 1, faculty: 1, room: 1 };
 
 class Bad extends Error { constructor(m) { super(m); this.code = 400; } }
 
@@ -305,6 +305,9 @@ async function run(b, who) {
       if (b.field === 'subject')
         await q`UPDATE timetable SET subject = ${value}, updated_by = ${who}, updated_at = now()
                 WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
+      else if (b.field === 'code')
+        await q`UPDATE timetable SET code = ${value}, updated_by = ${who}, updated_at = now()
+                WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
       else if (b.field === 'faculty')
         await q`UPDATE timetable SET faculty = ${value}, updated_by = ${who}, updated_at = now()
                 WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}`;
@@ -314,7 +317,25 @@ async function run(b, who) {
       /* A slot emptied of everything is removed, so it does not linger. */
       await q`DELETE FROM timetable
               WHERE batch = ${batch} AND programme = ${prog} AND day = ${day} AND slot = ${slot}
-                AND subject = '' AND faculty = '' AND room = ''`;
+                AND subject = '' AND faculty = '' AND room = '' AND code = ''`;
+      return readTimetable();
+    }
+
+    /* When a slot runs, for one batch and day. */
+    case 'setSlotTime': {
+      const batch = txt(b.batch, 40), day = Number(b.day), slot = Number(b.slot);
+      if (!batch) throw new Bad('Unknown batch');
+      if (![6, 7].includes(day)) throw new Bad('Classes are on Saturday and Sunday');
+      if (!(slot >= 1 && slot <= 4)) throw new Bad('There are four slots in a day');
+      const label = txt(b.value, 60);
+      if (label)
+        await q`
+          INSERT INTO tt_slots (batch, day, slot, label, updated_by)
+          VALUES (${batch}, ${day}, ${slot}, ${label}, ${who})
+          ON CONFLICT (batch, day, slot) DO UPDATE SET
+            label = EXCLUDED.label, updated_by = EXCLUDED.updated_by, updated_at = now()`;
+      else
+        await q`DELETE FROM tt_slots WHERE batch = ${batch} AND day = ${day} AND slot = ${slot}`;
       return readTimetable();
     }
 
@@ -335,17 +356,31 @@ async function run(b, who) {
         const batch = txt(r.batch, 40), prog = txt(r.programme, 80);
         const day = Number(r.day), slot = Number(r.slot);
         if (!batch || !prog || ![6, 7].includes(day) || !(slot >= 1 && slot <= 4)) continue;
-        const subject = txt(r.subject, 200), faculty = txt(r.faculty, 200), room = txt(r.room, 200);
-        if (!subject && !faculty && !room) continue;
+        const subject = txt(r.subject, 200), faculty = txt(r.faculty, 200),
+              room = txt(r.room, 200), code = txt(r.code, 60);
+        if (!subject && !faculty && !room && !code) continue;
         await q`
-          INSERT INTO timetable (batch, programme, day, slot, subject, faculty, room, updated_by)
-          VALUES (${batch}, ${prog}, ${day}, ${slot}, ${subject}, ${faculty}, ${room}, ${who + ' · timetable file'})
+          INSERT INTO timetable (batch, programme, day, slot, subject, code, faculty, room, updated_by)
+          VALUES (${batch}, ${prog}, ${day}, ${slot}, ${subject}, ${code}, ${faculty}, ${room}, ${who + ' · timetable file'})
           ON CONFLICT (batch, programme, day, slot) DO UPDATE SET
-            subject = EXCLUDED.subject, faculty = EXCLUDED.faculty, room = EXCLUDED.room,
-            updated_by = EXCLUDED.updated_by, updated_at = now()`;
+            subject = EXCLUDED.subject, code = EXCLUDED.code, faculty = EXCLUDED.faculty,
+            room = EXCLUDED.room, updated_by = EXCLUDED.updated_by, updated_at = now()`;
         saved++;
       }
-      return Object.assign({ saved }, await readTimetable());
+
+      /* The times from the file, so the headings match the real timetable. */
+      let times = 0;
+      for (const s of (Array.isArray(b.slots) ? b.slots.slice(0, 200) : [])) {
+        const batch = txt(s.batch, 40), day = Number(s.day), slot = Number(s.slot), label = txt(s.label, 60);
+        if (!batch || ![6, 7].includes(day) || !(slot >= 1 && slot <= 4) || !label) continue;
+        await q`
+          INSERT INTO tt_slots (batch, day, slot, label, updated_by)
+          VALUES (${batch}, ${day}, ${slot}, ${label}, ${who + ' · timetable file'})
+          ON CONFLICT (batch, day, slot) DO UPDATE SET
+            label = EXCLUDED.label, updated_by = EXCLUDED.updated_by, updated_at = now()`;
+        times++;
+      }
+      return Object.assign({ saved, times }, await readTimetable());
     }
 
     case 'addProof': {
