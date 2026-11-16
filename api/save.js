@@ -288,6 +288,23 @@ async function run(b, who) {
       return readBatches();
     }
 
+    /* The semester and strength lines at the top of the Calendar of Events
+       table. Free text, because the department writes strength its own way. */
+    case 'setBatchInfo': {
+      const batch = txt(b.batch, 80);
+      if (!batch) throw new Bad('Unknown batch');
+      if (!['semester', 'strength'].includes(b.field)) throw new Bad('Unknown field');
+      const value = txt(b.value, 120);
+      await q`INSERT INTO batch_info (batch, updated_by) VALUES (${batch}, ${who})
+              ON CONFLICT (batch) DO NOTHING`;
+      if (b.field === 'semester')
+        await q`UPDATE batch_info SET semester = ${value}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch}`;
+      else
+        await q`UPDATE batch_info SET strength = ${value}, updated_by = ${who}, updated_at = now() WHERE batch = ${batch}`;
+      await q`DELETE FROM batch_info WHERE batch = ${batch} AND semester = '' AND strength = ''`;
+      return readCalendar();
+    }
+
     /* ---------- Timetable ---------- */
 
     case 'setClass': {

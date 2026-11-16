@@ -233,6 +233,19 @@ export async function ensure() {
       PRIMARY KEY (batch, day, slot)
     )`;
 
+  /* Nov 2026: the two lines at the top of the consolidated calendar — which
+     semester a batch is in, and its strength. The department writes strength
+     in its own way ("BBA-73, BCA 93"), and its figure for a semester is not
+     always the intake on Batches Status, so it is kept as typed. */
+  await q`
+    CREATE TABLE IF NOT EXISTS batch_info (
+      batch      TEXT PRIMARY KEY,
+      semester   TEXT NOT NULL DEFAULT '',
+      strength   TEXT NOT NULL DEFAULT '',
+      updated_by TEXT NOT NULL DEFAULT '',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+
   /* Every save attempt, kept so problems can be traced. */
   await q`
     CREATE TABLE IF NOT EXISTS audit (
@@ -262,7 +275,8 @@ export async function readCalendar() {
     SELECT id::text AS id, event_id::text AS event_id, label, url, added_by AS by,
            to_char(added_at AT TIME ZONE 'Asia/Kolkata', 'DD Mon YYYY') AS added
     FROM proofs ORDER BY added_at`;
-  return { events, proofs };
+  const batchInfo = await q`SELECT batch, semester, strength FROM batch_info ORDER BY batch`;
+  return { events, proofs, batchInfo };
 }
 
 export async function readBatches() {

@@ -40,9 +40,13 @@ a{color:var(--red-deep)}
 /* ── Header ───────────────────────────────────────────────────── */
 .top-in{padding:.85rem var(--gutter);display:flex;align-items:center;gap:var(--s5)}
 .logo{height:56px;width:auto;display:block}
-.brand{margin-left:auto;text-align:right;line-height:1.05}
+.centre{margin:0 auto;text-align:center;line-height:1.15}
+.centre .c1{margin:0;font-size:1.22rem;font-weight:800;font-variation-settings:"wdth" 82;letter-spacing:-.005em}
+.centre .c2{margin:.1rem 0 0;font-size:1.02rem;font-weight:600;color:var(--ink-2);font-variation-settings:"wdth" 88;
+  letter-spacing:.06em;text-transform:uppercase}
+.brand{text-align:right;line-height:1.05}
 .brand h1{margin:0;font-size:1.7rem;font-weight:850;font-variation-settings:"wdth" 70;letter-spacing:-.01em}
-.brand p{margin:.25rem 0 0;color:var(--ink-2);font-size:.84rem}
+.brand p{margin:.25rem 0 0;color:var(--red);font-size:.82rem;font-weight:650;letter-spacing:.02em}
 .who{display:flex;align-items:center;gap:var(--s2);white-space:nowrap;padding-left:var(--s5);border-left:1px solid var(--rule);min-height:44px}
 .who .me{font-size:.84rem;color:var(--ink-2);line-height:1.2;text-align:right}
 .who .me b{display:block;color:var(--ink);font-weight:700}
@@ -342,6 +346,41 @@ table.ttt tbody tr:hover td{background:#FFFCFC}
   table.ttt td.tt.empty{background:none}
 }
 
+/* Calendar of Events, the consolidated table */
+.coegrid{overflow:auto}
+table.coe{min-width:0;border-collapse:separate;border-spacing:0}
+table.coe th,table.coe td{border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);
+  padding:.55rem .7rem;font-size:.86rem;vertical-align:middle;text-align:center}
+table.coe tr > *:last-child{border-right:0}
+table.coe tbody tr:last-child > *{border-bottom:0}
+table.coe thead th{position:sticky;top:0;z-index:2;border-bottom:0;padding:0;background:var(--white)}
+table.coe thead th.lab{background:var(--rule-2);font-weight:800;color:var(--ink);padding:.6rem .7rem;font-size:.86rem}
+table.coe .bhead{appearance:none;border:0;width:100%;display:block;cursor:pointer;
+  background:var(--tone);color:#fff;font:inherit;font-weight:800;font-variation-settings:"wdth" 82;
+  letter-spacing:.03em;padding:.6rem .7rem;font-size:.9rem}
+table.coe .bhead:hover{filter:brightness(1.08)}
+table.coe th[scope="row"]{text-align:left;font-weight:750;background:var(--rule-2);white-space:normal;
+  min-width:11rem;position:sticky;left:0;z-index:1}
+table.coe td.dt{font-variant-numeric:tabular-nums;white-space:nowrap}
+table.coe tr.info td{background:#FBF9F9}
+table.coe tr.r-exam td{background:#EAF4FD}
+table.coe tr.r-next td{background:#EAF7EE}
+table.coe tr.r-exam th[scope="row"],table.coe tr.r-next th[scope="row"]{color:var(--red-deep)}
+table.coe td.others{text-align:left;white-space:normal}
+table.coe .oth{display:block;font-size:.78rem;color:var(--ink-2);line-height:1.35}
+table.coe .oth b{font-variant-numeric:tabular-nums;color:var(--ink)}
+table.coe .bin{width:100%;padding:.25rem .4rem;font-size:.84rem;text-align:center;font-weight:650;
+  border:1.5px dashed var(--rule);border-radius:var(--r-sm);background:var(--white)}
+table.coe .bin:focus{outline:2px solid var(--red);outline-offset:-1px;border-style:solid;border-color:var(--red)}
+table.coe .bin.ok{border-color:var(--ok);color:var(--ok)}
+@media print{
+  table.coe thead th{position:static}
+  table.coe th[scope="row"]{position:static}
+  table.coe .bin{border:0;padding:0;background:transparent}
+  table.coe .bin::placeholder{color:transparent}
+  table.coe tr{break-inside:avoid}
+}
+
 /* By batch */
 .bsec{margin-bottom:var(--s5)}
 .bsec header{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem .8rem;margin-bottom:.5rem}
@@ -401,6 +440,9 @@ h4.impb:first-child{margin-top:0}
   .logo{height:44px}
   .brand{margin-left:0;text-align:left;order:3;width:100%;display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap}
   .brand h1{font-size:1.45rem}
+  .centre{order:4;width:100%;text-align:left;margin:0}
+  .centre .c1{font-size:1rem}
+  .centre .c2{font-size:.86rem}
   .who{margin-left:auto;border-left:0;padding-left:0}
   .band-in{min-height:58px}
   .tab{padding:.6rem .9rem}
@@ -453,9 +495,13 @@ h4.impb:first-child{margin-top:0}
 <header class="top">
   <div class="top-in">
     <img class="logo" src="/logo.jpg" alt="Vignan's Foundation for Science, Technology &amp; Research — Vignan's Online">
+    <div class="centre">
+      <p class="c1">Centre for Distance and Online Education</p>
+      <p class="c2">Vignan University</p>
+    </div>
     <div class="brand">
       <h1>CDOE Workboard</h1>
-      <p>Centre for Distance and Online Education</p>
+      <p>Learn · Plan · Achieve</p>
     </div>
     <div class="who" id="who"></div>
   </div>
@@ -476,7 +522,7 @@ h4.impb:first-child{margin-top:0}
 <footer>
   <div>
     <span>CDOE Workboard · Vignan's Foundation for Science, Technology &amp; Research (Deemed to be University)</span>
-    <span>Version 12 Nov 2026</span>
+    <span>Version 16 Nov 2026</span>
   </div>
 </footer>
 
@@ -586,7 +632,7 @@ function toast(msg, bad){
    ═══════════════════════════════════════════════════════════════ */
 const state = { tab: "activity", cal: "activity", month: null, view: "month", filter: "all", q: "", showCancelled: false,
                 bsRows: [], bsBatch: "all", ttRows: [], ttSlots: [], ttShape: [], ttBatch: "", ttBy: "batch",
-                session: null, events: [], proofs: [], loadError: null };
+                batchInfo: [], session: null, events: [], proofs: [], loadError: null };
 try { const s = JSON.parse(localStorage.getItem("cdoe.session") || "null"); if (s && s.token && s.exp > Date.now()) state.session = s; } catch {}
 
 async function get(what, params = {}){
@@ -613,7 +659,12 @@ function applyTimetable(j){
   state.ttSlots = j.slots || [];
   state.ttShape = j.shape || state.ttShape;
 }
-function applyCalendar(j){ state.events = (j.events || []).map(e => ({ ...e, cal: e.cal || "activity" })); state.proofs = j.proofs || []; batchTones = null; }
+function applyCalendar(j){
+  state.events = (j.events || []).map(e => ({ ...e, cal: e.cal || "activity" }));
+  state.proofs = j.proofs || [];
+  if (j.batchInfo) state.batchInfo = j.batchInfo;
+  batchTones = null;
+}
 function report(msg){
   try { fetch("/api/save", { method:"POST", headers:{ "Content-Type":"application/json" },
     body: JSON.stringify({ action:"report", msg: String(msg).slice(0, 280), who: state.session?.who || "" }) }); } catch {}
@@ -713,13 +764,16 @@ function readHash(){
   state.month = m;
   /* The Calendar of Events has no month grid: a batch's sessions run for
      weeks at a time, so it reads far better batch by batch. */
-  state.view = extra === "list" ? "list" : extra === "batch" ? "batch" : (tab === "coe" ? "batch" : "month");
-  if (tab === "coe" && state.view === "month") state.view = "batch";
+  state.view = extra === "list" ? "list" : extra === "batch" ? "batch" : extra === "table" ? "table"
+             : (tab === "coe" ? "table" : "month");
+  if (tab === "coe" && state.view === "month") state.view = "table";
+  if (tab !== "coe" && state.view === "table") state.view = "batch";
 }
 const hashFor = (cal = state.cal, month = state.month, view = state.view) =>
   state.tab === "batches"   ? "#batches/" + encodeURIComponent(state.bsBatch)
   : state.tab === "timetable" ? "#timetable/" + (state.ttBy === "faculty" ? "faculty" : encodeURIComponent(state.ttBatch))
-                          : "#" + cal + "/" + month + (view === "list" ? "/list" : view === "batch" ? "/batch" : "");
+                          : "#" + cal + "/" + month + (view === "list" ? "/list" : view === "batch" ? "/batch"
+                                                     : view === "table" ? "/table" : "");
 function go(h){ if (location.hash !== h) location.hash = h; else route(); }
 function route(){
   readHash();
@@ -751,6 +805,7 @@ function render(){
     if (!state.month) return;
     v.innerHTML = head() + (state.view === "month" ? strip() : "") + toolbar() + (evOf().length ? "" : welcome()) +
       (state.view === "list" ? drawList()
+       : state.view === "table" ? drawTable()
        : state.view === "batch" ? drawByBatch()
        : `<div class="gridwrap">${drawMonth()}</div>` + below());
   }
@@ -770,8 +825,9 @@ function head(){
     : `<h2>${esc(C().name)} <span>${rangeLabel(lo, hi)}</span></h2>`}
     <span class="grow"></span>
     <div class="seg" role="group" aria-label="View">
-      ${state.cal === "coe" ? "" : `<button data-view="month" aria-pressed="${state.view === "month"}">Month</button>`}
-      <button data-view="batch" aria-pressed="${state.view === "batch"}">${state.cal === "coe" ? "By batch" : "By group"}</button>
+      ${state.cal === "coe" ? `<button data-view="table" aria-pressed="${state.view === "table"}">By batch</button>`
+        : `<button data-view="month" aria-pressed="${state.view === "month"}">Month</button>`}
+      <button data-view="batch" aria-pressed="${state.view === "batch"}">${state.cal === "coe" ? "Each batch" : "By group"}</button>
       <button data-view="list" aria-pressed="${state.view === "list"}">List &amp; report</button>
     </div>
     ${state.view === "month" ? "" : `<button class="btn line" id="printBtn">${ICON.print}Print</button>`}
@@ -956,6 +1012,122 @@ function drawList(){
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
     <div class="rtable"><table><thead><tr><th>Date</th><th>${act ? "Activity" : "Event"}</th><th>Type</th><th>${act ? "For" : "Batch"}</th>${act ? "<th>Status</th><th>Proof</th>" : ""}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ── The consolidated table: batches across, the semester down ────
+   The same shape as the department's own Consolidated Calendar of
+   Events sheet, so the site and the sheet read the same way.      */
+
+const ROMAN = ["", "I", "II", "III", "IV", "V", "VI", "VII", "VIII"];
+/* "July 2024 – Sem VI" → "JULY-24", the way the sheet heads its columns. */
+function shortBatch(b){
+  const m = String(b).match(/(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*(\d{4}|\d{2})\b/i);
+  if (!m) return String(b).toUpperCase();
+  const mon = m[1].toLowerCase().startsWith("jul") ? "JULY" : m[1].slice(0, 3).toUpperCase();
+  return mon + "-" + m[2].slice(-2);
+}
+/* Two semesters of the same intake share a short name, so the semester is
+   added to tell them apart — JULY-24 (V) and JULY-24 (VI). */
+function columnLabel(b, all){
+  const s = shortBatch(b);
+  const clash = all.filter(x => shortBatch(x) === s).length > 1;
+  const sem = semOf(b);
+  return clash && sem ? s + " (" + sem + ")" : s;
+}
+const semOf = b => { const m = String(b).match(/sem(?:ester)?\s*([IVX]+)/i); return m ? m[1].toUpperCase() : ""; };
+const romanIn = t => { const m = String(t).match(/semester\s*[–-]?\s*([IVX]+)\b/i); return m ? m[1].toUpperCase() : ""; };
+
+/* Which of the table's lines an entry belongs on. */
+const COE_ROWS = [
+  ["commence",  "Commencement Date"],
+  ["w16",       "Live Session Week 1 to 6"],
+  ["ca1",       "Continuous Assessment 1"],
+  ["w712",      "Live Session Week 7 to 12"],
+  ["ca2",       "Continuous Assessment 2"],
+  ["w1315",     "Live Session Week 13 to 15"],
+  ["exam",      "End Semester Examination"],
+  ["next",      "Commencement of Next Semester"],
+  ["other",     "Other dates"]
+];
+function coeRowOf(e, batch){
+  const t = String(e.title || "").toLowerCase();
+  if (/commencement/.test(t)) {
+    const r = romanIn(e.title), own = semOf(batch);
+    if (r && own) return r === own ? "commence" : "next";
+    return "commence";
+  }
+  if (/end semester exam|end-semester exam/.test(t)) return "exam";
+  if (/continuous assessment/.test(t)) return /\b(ii|2)\b/.test(t) ? "ca2" : "ca1";
+  const w = t.match(/week[s]?\s*(\d+)/);
+  if (w && /(live session|synchronous session)/.test(t)) {
+    const n = Number(w[1]);
+    if (n <= 6) return "w16";
+    if (n <= 12) return "w712";
+    return "w1315";
+  }
+  return "other";
+}
+
+/* A line's dates, merged: one date, or the span from first to last. */
+function coeSpan(list){
+  if (!list.length) return "";
+  const from = list.reduce((m, e) => e.start < m ? e.start : m, list[0].start);
+  const to   = list.reduce((m, e) => e.end   > m ? e.end   : m, list[0].end);
+  return from === to ? dmy(from) : dmy(from) + " to " + dmy(to);
+}
+const dmy = s => s.slice(8, 10) + "-" + s.slice(5, 7) + "-" + s.slice(0, 4);
+
+function drawTable(){
+  const ed = canEdit(), evs = visible().filter(e => batchesOf(e).length);
+  const loose = visible().filter(e => !batchesOf(e).length);
+  if (!evs.length) return `<div class="notice">Nothing to show.${evOf().length ? " Clear the search or choose All in the filter." : ""}</div>`;
+
+  const groups = new Map();
+  evs.forEach(e => batchesOf(e).forEach(b => { if (!groups.has(b)) groups.set(b, []); groups.get(b).push(e); }));
+  const cols = allBatches().filter(b => groups.has(b));
+  [...groups.keys()].forEach(b => { if (!cols.includes(b)) cols.push(b); });
+
+  const info = b => state.batchInfo.find(x => x.batch === b) || {};
+  const cellFor = (b, key) => {
+    const list = (groups.get(b) || []).filter(e => coeRowOf(e, b) === key);
+    if (!list.length) return "";
+    if (key === "other") return list.sort((a, c) => a.start.localeCompare(c.start))
+      .map(e => `<span class="oth">${esc(e.title)} <b>${esc(dmy(e.start))}</b></span>`).join("");
+    return esc(coeSpan(list));
+  };
+  /* No placeholder text here: a greyed example in an empty cell reads like a
+     figure, and these cells sit in a table of real ones. */
+  const textRow = (key, label) => `<tr class="info">
+    <th scope="row">${label}</th>
+    ${cols.map(b => {
+      const v = info(b)[key] || (key === "semester" ? semOf(b) : "");
+      return `<td>${ed ? `<input class="bin" data-b="${esc(b)}" data-f="${key}" value="${esc(v)}"
+          aria-label="${label}, ${esc(b)}">` : (esc(v) || `<span class="hint">—</span>`)}</td>`;
+    }).join("")}</tr>`;
+
+  const used = new Set();
+  cols.forEach(b => (groups.get(b) || []).forEach(e => used.add(coeRowOf(e, b))));
+  const [lo, hi] = bounds();
+  return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Calendar of Events, ${rangeLabel(lo, hi)}</h2>
+      <p>Printed ${esc(longDate(todayISO()))}.</p></div>
+    <div class="rtable coegrid"><table class="coe">
+      <thead><tr><th class="lab">Details</th>
+        ${cols.map(b => `<th style="--tone:${batchTone(b)}" title="${esc(b)}">
+          <button class="bhead" data-bfilter="${esc(b)}">${esc(columnLabel(b, cols))}</button></th>`).join("")}</tr></thead>
+      <tbody>
+        ${textRow("semester", "Semester")}
+        ${textRow("strength", "Strength")}
+        ${COE_ROWS.filter(([k]) => used.has(k)).map(([k, label]) => `<tr class="r-${k}">
+          <th scope="row">${label}</th>
+          ${cols.map(b => `<td class="${k === "other" ? "others" : "dt"}">${cellFor(b, k) || `<span class="hint">—</span>`}</td>`).join("")}
+        </tr>`).join("")}
+      </tbody>
+    </table></div>
+    ${loose.length ? `<h3 class="sub">Holidays and days off</h3>
+      <div class="rtable"><table><thead><tr><th>Date</th><th>Day off</th></tr></thead>
+      <tbody>${loose.sort((a, b) => a.start.localeCompare(b.start)).map(e => `<tr class="ev" data-ev="${e.id}">
+        <td class="nowrap">${esc(dmy(e.start))}</td><td><b>${esc(e.title)}</b></td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Semester and Strength are typed in and save by themselves; everything else is worked out from the dates on the calendar. Choose a batch heading to see only that batch.</p>` : ""}`;
 }
 
 /* Every batch, one after another, with its whole semester laid out —
@@ -1733,6 +1905,18 @@ function ttByFaculty(){
     <p class="hint">A row in red means that faculty member is down for two classes in the same slot.</p>`;
 }
 
+/* The Semester and Strength lines on the Calendar of Events table. */
+let biTimer = null;
+async function biSave(el){
+  if (!el || !el.isConnected) return;
+  clearTimeout(biTimer); biTimer = null;
+  try {
+    const j = await post("setBatchInfo", { batch: el.dataset.b, field: el.dataset.f, value: el.value });
+    if (j.batchInfo) state.batchInfo = j.batchInfo;
+    el.classList.add("ok"); setTimeout(() => el.classList.remove("ok"), 1200);
+  } catch (e) { toast(e.message, true); }
+}
+
 /* ── Saving one class box ────────────────────────────────────── */
 let ttTimer = null;
 async function ttSave(el){
@@ -2118,6 +2302,11 @@ document.addEventListener("click", async ev => {
   if (t.id === "bsPrint") { window.print(); return; }
   if (t.id === "bsXl") { bsExcel(); return; }
   if (t.id === "bsImp") { bsImport(); return; }
+  if (t.dataset.bfilter) {
+    const want = "b:" + t.dataset.bfilter;
+    state.filter = state.filter === want ? "all" : want;
+    render(); return;
+  }
   if (t.id === "ttXl") { ttExcel(); return; }
   if (t.id === "ttPrint") { window.print(); return; }
   if (t.id === "ttImp") { ttImport(); return; }
@@ -2183,6 +2372,7 @@ document.addEventListener("input", ev => {
   if (t.matches(".rin")) { const el = t; clearTimeout(bsTimer); bsTimer = setTimeout(() => bsSave(el), 1200); return; }
   if (t.matches(".tin")) { const el = t; clearTimeout(ttTimer); ttTimer = setTimeout(() => ttSave(el), 1000); return; }
   if (t.matches(".slin")) { const el = t; clearTimeout(ttTimer); ttTimer = setTimeout(() => ttSaveSlot(el), 1200); return; }
+  if (t.matches(".bin")) { const el = t; clearTimeout(biTimer); biTimer = setTimeout(() => biSave(el), 1200); return; }
   if (t.id === "fQ") {
     state.q = t.value;
     clearTimeout(state._fq); state._fq = setTimeout(() => { render(); const f = $("#fQ"); f.focus(); f.setSelectionRange(f.value.length, f.value.length); }, 250);
@@ -2197,6 +2387,7 @@ document.addEventListener("change", ev => {
   if (t.matches(".nin, .rin")) { bsSave(t); return; }
   if (t.matches(".tin")) { ttSave(t); return; }
   if (t.matches(".slin")) { ttSaveSlot(t); return; }
+  if (t.matches(".bin")) { biSave(t); return; }
   if (t.id === "evFile" && t.files[0]) { handleEventFile(t.files[0]); return; }
   if (t.id === "bsFile" && t.files[0]) { bsHandleFile(t.files[0]); return; }
   if (t.id === "ttFile" && t.files[0]) { ttHandleFile(t.files[0]); return; }
@@ -2209,7 +2400,7 @@ document.addEventListener("keydown", ev => {
   if (ev.key === "Enter" && (ev.target.id === "pUrl" || ev.target.id === "pLbl")) { ev.preventDefault(); attachLink($("#dlg").dataset.evid); return; }
   if (ev.key === "Enter" && ev.target.closest("#dlgSign") && ev.target.tagName === "INPUT") { ev.preventDefault(); doSignIn(); return; }
   if (ev.key === "Enter" && ev.target.id === "bsName") { ev.preventDefault(); bsDoAdd(); return; }
-  if (ev.key === "Enter" && ev.target.matches(".nin, .rin, .tin, .slin")) { ev.preventDefault(); ev.target.blur(); return; }
+  if (ev.key === "Enter" && ev.target.matches(".nin, .rin, .tin, .slin, .bin")) { ev.preventDefault(); ev.target.blur(); return; }
   if ((ev.key === "ArrowLeft" || ev.key === "ArrowRight") && !$("#dlg").open && !$("#dlgSign").open && !/INPUT|TEXTAREA|SELECT/.test(ev.target.tagName) && state.view === "month") {
     const b = $(`.calhead [aria-label="${ev.key === "ArrowLeft" ? "Previous" : "Next"} month"]`); if (b && !b.disabled) b.click();
   }
