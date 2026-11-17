@@ -348,19 +348,23 @@ table.ttt tbody tr:hover td{background:#FFFCFC}
 
 /* Calendar of Events, the consolidated table */
 .coegrid{overflow:auto}
-table.coe{min-width:0;border-collapse:separate;border-spacing:0}
+/* Fixed layout so every batch column is the same width, whether it holds one
+   date or eight. The table is as wide as its columns need and scrolls. */
+table.coe{min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
+table.coe col.c-lab{width:11rem}
+table.coe col.c-b{width:14rem}
 table.coe th,table.coe td{border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);
   padding:.55rem .7rem;font-size:.86rem;vertical-align:middle;text-align:center}
 table.coe tr > *:last-child{border-right:0}
 table.coe tbody tr:last-child > *{border-bottom:0}
 table.coe thead th{position:sticky;top:0;z-index:2;border-bottom:0;padding:0;background:var(--white)}
 table.coe thead th.lab{background:var(--rule-2);font-weight:800;color:var(--ink);padding:.6rem .7rem;font-size:.86rem}
-table.coe .bhead{appearance:none;border:0;width:100%;display:block;cursor:pointer;
+table.coe .bhead{appearance:none;border:0;width:100%;display:block;cursor:pointer;white-space:nowrap;
   background:var(--tone);color:#fff;font:inherit;font-weight:800;font-variation-settings:"wdth" 82;
   letter-spacing:.03em;padding:.6rem .7rem;font-size:.9rem}
 table.coe .bhead:hover{filter:brightness(1.08)}
 table.coe th[scope="row"]{text-align:left;font-weight:750;background:var(--rule-2);white-space:normal;
-  min-width:11rem;position:sticky;left:0;z-index:1}
+  position:sticky;left:0;z-index:1}
 table.coe td.dt{font-variant-numeric:tabular-nums;white-space:nowrap}
 table.coe tr.info td{background:#FBF9F9}
 table.coe tr.r-exam td{background:#EAF4FD}
@@ -1110,7 +1114,8 @@ function drawTable(){
   const [lo, hi] = bounds();
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Calendar of Events, ${rangeLabel(lo, hi)}</h2>
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
-    <div class="rtable coegrid"><table class="coe">
+    <div class="rtable coegrid"><table class="coe" style="width:${11 + cols.length * 14}rem">
+      <colgroup><col class="c-lab">${cols.map(() => `<col class="c-b">`).join("")}</colgroup>
       <thead><tr><th class="lab">Details</th>
         ${cols.map(b => `<th style="--tone:${batchTone(b)}" title="${esc(b)}">
           <button class="bhead" data-bfilter="${esc(b)}">${esc(columnLabel(b, cols))}</button></th>`).join("")}</tr></thead>
