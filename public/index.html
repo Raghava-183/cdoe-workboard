@@ -349,19 +349,22 @@ table.ttt tbody tr:hover td{background:#FFFCFC}
 /* Calendar of Events, the consolidated table */
 .coegrid{overflow:auto}
 /* Fixed layout so every batch column is the same width, whether it holds one
-   date or eight. The table is as wide as its columns need and scrolls. */
-table.coe{min-width:0;border-collapse:separate;border-spacing:0;table-layout:fixed}
-table.coe col.c-lab{width:11rem}
-table.coe col.c-b{width:14rem}
+   date or eight, and the whole table fits the page without scrolling across.
+   The minimum keeps it readable on a phone, where it scrolls instead. */
+table.coe{width:100%;min-width:46rem;border-collapse:separate;border-spacing:0;table-layout:fixed}
+table.coe col.c-lab{width:9.5rem}
 table.coe th,table.coe td{border-bottom:1px solid var(--rule);border-right:1px solid var(--rule);
-  padding:.55rem .7rem;font-size:.86rem;vertical-align:middle;text-align:center}
+  padding:.5rem .45rem;font-size:.82rem;vertical-align:middle;text-align:center}
+table.coe .d1{display:block;white-space:nowrap}
+table.coe .d2{display:block;white-space:nowrap;color:var(--ink-2)}
 table.coe tr > *:last-child{border-right:0}
 table.coe tbody tr:last-child > *{border-bottom:0}
 table.coe thead th{position:sticky;top:0;z-index:2;border-bottom:0;padding:0;background:var(--white)}
-table.coe thead th.lab{background:var(--rule-2);font-weight:800;color:var(--ink);padding:.6rem .7rem;font-size:.86rem}
+table.coe thead th.lab{background:var(--rule-2);font-weight:800;color:var(--ink);padding:.6rem .5rem;font-size:.82rem}
 table.coe .bhead{appearance:none;border:0;width:100%;display:block;cursor:pointer;white-space:nowrap;
-  background:var(--tone);color:#fff;font:inherit;font-weight:800;font-variation-settings:"wdth" 82;
-  letter-spacing:.03em;padding:.6rem .7rem;font-size:.9rem}
+  overflow:hidden;text-overflow:ellipsis;
+  background:var(--tone);color:#fff;font:inherit;font-weight:800;font-variation-settings:"wdth" 78;
+  letter-spacing:.02em;padding:.6rem .35rem;font-size:.84rem}
 table.coe .bhead:hover{filter:brightness(1.08)}
 table.coe th[scope="row"]{text-align:left;font-weight:750;background:var(--rule-2);white-space:normal;
   position:sticky;left:0;z-index:1}
@@ -371,7 +374,7 @@ table.coe tr.r-exam td{background:#EAF4FD}
 table.coe tr.r-next td{background:#EAF7EE}
 table.coe tr.r-exam th[scope="row"],table.coe tr.r-next th[scope="row"]{color:var(--red-deep)}
 table.coe td.others{text-align:left;white-space:normal}
-table.coe .oth{display:block;font-size:.78rem;color:var(--ink-2);line-height:1.35}
+table.coe .oth{display:block;font-size:.74rem;color:var(--ink-2);line-height:1.3;margin-bottom:.15rem}
 table.coe .oth b{font-variant-numeric:tabular-nums;color:var(--ink)}
 table.coe .bin{width:100%;padding:.25rem .4rem;font-size:.84rem;text-align:center;font-weight:650;
   border:1.5px dashed var(--rule);border-radius:var(--r-sm);background:var(--white)}
@@ -1072,12 +1075,15 @@ function coeRowOf(e, batch){
   return "other";
 }
 
-/* A line's dates, merged: one date, or the span from first to last. */
+/* A line's dates, merged: one date, or the span from first to last. The two
+   halves of a range are stacked, so a narrow column breaks in the same place
+   every time instead of wherever the words happen to run out. */
 function coeSpan(list){
   if (!list.length) return "";
   const from = list.reduce((m, e) => e.start < m ? e.start : m, list[0].start);
   const to   = list.reduce((m, e) => e.end   > m ? e.end   : m, list[0].end);
-  return from === to ? dmy(from) : dmy(from) + " to " + dmy(to);
+  if (from === to) return `<span class="d1">${esc(dmy(from))}</span>`;
+  return `<span class="d1">${esc(dmy(from))}</span><span class="d2">to ${esc(dmy(to))}</span>`;
 }
 const dmy = s => s.slice(8, 10) + "-" + s.slice(5, 7) + "-" + s.slice(0, 4);
 
@@ -1097,7 +1103,7 @@ function drawTable(){
     if (!list.length) return "";
     if (key === "other") return list.sort((a, c) => a.start.localeCompare(c.start))
       .map(e => `<span class="oth">${esc(e.title)} <b>${esc(dmy(e.start))}</b></span>`).join("");
-    return esc(coeSpan(list));
+    return coeSpan(list);
   };
   /* No placeholder text here: a greyed example in an empty cell reads like a
      figure, and these cells sit in a table of real ones. */
@@ -1114,7 +1120,7 @@ function drawTable(){
   const [lo, hi] = bounds();
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Calendar of Events, ${rangeLabel(lo, hi)}</h2>
       <p>Printed ${esc(longDate(todayISO()))}.</p></div>
-    <div class="rtable coegrid"><table class="coe" style="width:${11 + cols.length * 14}rem">
+    <div class="rtable coegrid"><table class="coe">
       <colgroup><col class="c-lab">${cols.map(() => `<col class="c-b">`).join("")}</colgroup>
       <thead><tr><th class="lab">Details</th>
         ${cols.map(b => `<th style="--tone:${batchTone(b)}" title="${esc(b)}">
@@ -1539,9 +1545,9 @@ const bsSum = rows => rows.reduce((a, r) => ({
   active: a.active + (r.active || 0), not_responding: a.not_responding + (r.not_responding || 0),
   backlogs_lt10: a.backlogs_lt10 + (r.backlogs_lt10 || 0), can_complete: a.can_complete + (r.can_complete || 0)
 }), { adm: 0, grad: 0, disc: 0, active: 0, not_responding: 0, backlogs_lt10: 0, can_complete: 0 });
-/* Learners still on roll: admitted, less those who left and those who finished. */
+/* Learners still on roll: admitted, less those who left and those who graduated. */
 const bsRoll = r => r.admitted === null ? 0 : r.admitted - (r.discontinued || 0) - (r.graduated || 0);
-/* The pass rate the department reports: of those who stayed, how many finished. */
+/* The pass rate the department reports: of those who stayed, how many graduated. */
 const bsPct = (g, a, d) => { const base = (a || 0) - (d || 0); return base > 0 ? Math.round(g / base * 100) : 0; };
 const bsAnyFollow = rows => rows.some(r => BS_FOLLOW.some(([k]) => r[k] !== null && r[k] !== undefined));
 const num = n => Number(n || 0).toLocaleString("en-IN");
@@ -1604,7 +1610,7 @@ function bsMatrix(){
     return `<td class="nums"><b>${num(r.admitted)}</b>${under(bsSum([r]))}</td>`;
   };
   return `<div class="report-head"><img src="/logo.jpg" alt=""><h2>CDOE Batches Status</h2>
-      <p>Learners admitted, how many have finished and how many discontinued. Printed ${esc(longDate(todayISO()))}.</p></div>
+      <p>Learners admitted, how many have graduated and how many discontinued. Printed ${esc(longDate(todayISO()))}.</p></div>
     <div class="rtable"><table class="mx">
     <thead><tr><th>Programme</th>${bs.map(b => `<th class="nums"><button class="lnk" data-bs="${esc(b)}">${esc(b)}</button></th>`).join("")}<th class="nums">Total</th></tr></thead>
     <tbody>${progs.map(p => {
@@ -1617,7 +1623,7 @@ function bsMatrix(){
         return `<td class="nums"><b>${num(t.adm)}</b>${under(t)}</td>`; }).join("")}
       <td class="nums tot"><b>${num(grand.adm)}</b>${under(grand)}</td></tr></tfoot>
     </table></div>
-    <p class="hint" style="margin-top:var(--s3)">Choose a batch above, or a batch name in the table, to fill in the figures and add remarks. <b>done</b> means finished the degree, <b>left</b> means discontinued.</p>`;
+    <p class="hint" style="margin-top:var(--s3)">Choose a batch above, or a batch name in the table, to fill in the figures and add remarks. <b>done</b> means graduated, <b>left</b> means discontinued.</p>`;
 }
 
 /* One batch: every programme, with the numbers people fill in. */
@@ -1638,7 +1644,7 @@ function bsDetail(batch){
       <td class="n">${cell(r, "discontinued", none)}</td>
       <td class="n">${cell(r, "graduated", none)}</td>
       <td class="n"><b class="left">${none ? "–" : num(bsRoll(r))}</b></td>
-      <td class="pb"><span class="track" title="${p}% of those who stayed have finished"><i style="width:${p}%"></i></span><span class="pc">${none ? "" : p + "%"}</span></td>
+      <td class="pb"><span class="track" title="${p}% of those who stayed have graduated"><i style="width:${p}%"></i></span><span class="pc">${none ? "" : p + "%"}</span></td>
       <td class="rm">${ed ? `<input type="text" class="rin" data-f="remarks" value="${esc(r.remarks)}" placeholder="Add a note" aria-label="Remarks, ${esc(r.programme)}"><span class="pv">${esc(r.remarks)}</span>`
         : (r.remarks ? esc(r.remarks) : `<span class="hint">—</span>`)}</td>
       <td class="st"><span data-state>${r.by && r.by !== "Department intake sheet" ? "Changed by " + esc(r.by) : ""}</span></td>
@@ -1646,7 +1652,7 @@ function bsDetail(batch){
   };
   const follow = (ed || bsAnyFollow(rows)) ? `
     <h3 class="sub">The ${num(roll)} still on roll</h3>
-    <p class="hint">Where the learners who have neither finished nor left have got to.</p>
+    <p class="hint">Where the learners who have neither graduated nor left have got to.</p>
     <div class="rtable"><table class="bst bst2">
       <thead><tr><th>Programme</th><th class="n">Still on roll</th>${BS_FOLLOW.map(([, l]) => `<th class="n">${l}</th>`).join("")}<th class="st"></th></tr></thead>
       <tbody>${rows.map(r => `<tr data-prog="${esc(r.programme)}">
@@ -1662,19 +1668,19 @@ function bsDetail(batch){
     <div class="tiles">
       <div class="meter"><div class="big">${num(t.adm)}</div><div class="hint">learners admitted in ${esc(bsLabel(batch))}</div></div>
       <div class="meter"><div class="big">${num(t.grad)}<span> of ${num(t.adm - t.disc)}</span></div>
-        <div class="track"><i style="width:${pct}%;background:var(--ok)"></i></div><div class="hint">finished the degree · ${pct}% of those who stayed</div></div>
+        <div class="track"><i style="width:${pct}%;background:var(--ok)"></i></div><div class="hint">graduated · ${pct}% of those who stayed</div></div>
       <div class="meter"><div class="big">${num(t.disc)}</div><div class="hint">discontinued</div></div>
       <div class="meter"><div class="big">${num(roll)}</div><div class="hint">still on roll</div></div>
     </div>
     ${ed ? "" : `<div class="notice">You are viewing. <a href="#" id="bsSignLink">Sign in</a> to fill in the numbers and remarks.</div>`}
     <div class="rtable"><table class="bst">
-      <thead><tr><th>Programme</th><th class="n">Learners</th><th class="n">Discontinued</th><th class="n">Finished</th><th class="n">Still on roll</th><th class="pb">Progress</th><th class="rm">Remarks</th><th class="st"></th></tr></thead>
+      <thead><tr><th>Programme</th><th class="n">Learners</th><th class="n">Discontinued</th><th class="n">Graduated</th><th class="n">Still on roll</th><th class="pb">Progress</th><th class="rm">Remarks</th><th class="st"></th></tr></thead>
       <tbody>${rows.map(line).join("")}</tbody>
       <tfoot><tr><th scope="row">All programmes</th><td class="n">${num(t.adm)}</td><td class="n">${num(t.disc)}</td><td class="n">${num(t.grad)}</td><td class="n">${num(roll)}</td>
         <td class="pb"><span class="track"><i style="width:${pct}%"></i></span><span class="pc">${pct}%</span></td><td colspan="2"></td></tr></tfoot>
     </table></div>
     ${follow}
-    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a number and it saves by itself. <b>Still on roll</b> is worked out for you: learners, less those who discontinued and those who finished. <b>Progress</b> is how many of those who stayed have finished. A dash means the programme took no intake in this batch.</p>` : ""}`;
+    ${ed ? `<p class="hint" style="margin-top:var(--s3)">Type a number and it saves by itself. <b>Still on roll</b> is worked out for you: learners, less those who discontinued and those who graduated. <b>Progress</b> is how many of those who stayed have graduated. A dash means the programme took no intake in this batch.</p>` : ""}`;
 }
 
 /* ── Saving ─────────────────────────────────────────────────── */
@@ -2171,7 +2177,7 @@ async function bsHandleFile(file){
     const wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false, cellStyles: true });
     const found = CDOEImport.readBatchWorkbook(CDOEImport.sheetsFrom(wb, XLSX));
     const known = new Set(bsBatches()), progs = new Set(bsProgs());
-    const FIELDS = [["admitted", "Learners"], ["discontinued", "Discontinued"], ["graduated", "Finished"],
+    const FIELDS = [["admitted", "Learners"], ["discontinued", "Discontinued"], ["graduated", "Graduated"],
       ["active", "Active"], ["notResponding", "Not responding"], ["backlogs", "Under 10 backlogs"], ["canComplete", "Can finish"]];
     const DBF = { admitted: "admitted", discontinued: "discontinued", graduated: "graduated",
       active: "active", notResponding: "not_responding", backlogs: "backlogs_lt10", canComplete: "can_complete" };
@@ -2186,7 +2192,7 @@ async function bsHandleFile(file){
       /* Only the figures this sheet carries a column for are compared; the
          rest are not mentioned in the file, so they stay as they are. */
       FIELDS.filter(([k]) => !sh.cols || sh.cols.includes(k)).forEach(([k, label]) => {
-        /* Finished is stored as 0 rather than blank, so a blank in the file
+        /* Graduated is stored as 0 rather than blank, so a blank in the file
            against a 0 on the site is not a change. */
         const now = k === "graduated" ? (r[k] ?? 0) : r[k];
         const before = was ? was[DBF[k]] : undefined;
@@ -2196,7 +2202,7 @@ async function bsHandleFile(file){
         changes++;
       });
       if (r.admitted !== null && (r.graduated || 0) + (r.discontinued || 0) > r.admitted)
-        warn.push(`${sh.batch} ${r.programme}: ${r.graduated} finished and ${r.discontinued} discontinued come to more than the ${r.admitted} admitted, so this row will be skipped.`);
+        warn.push(`${sh.batch} ${r.programme}: ${r.graduated} graduated and ${r.discontinued} discontinued come to more than the ${r.admitted} admitted, so this row will be skipped.`);
       if (r.remaining !== null && r.admitted !== null
           && r.remaining !== r.admitted - (r.discontinued || 0) - (r.graduated || 0))
         warn.push(`${sh.batch} ${r.programme}: the sheet's Remaining says ${r.remaining}, but ${r.admitted} − ${r.discontinued} − ${r.graduated} is ${r.admitted - (r.discontinued || 0) - (r.graduated || 0)}. The figures on the sheet are used; Remaining is worked out again here.`);
@@ -2264,7 +2270,7 @@ function bsExcel(){
 
   /* One row per batch and programme, in the order the department's own report reads. */
   const blank = v => (v === null || v === undefined ? "" : v);
-  const detail = [["Batch", "Programme", "Learners", "Discontinued", "Finished", "% of those who stayed",
+  const detail = [["Batch", "Programme", "Learners", "Discontinued", "Graduated", "% of those who stayed",
                    "Still on roll", "Active", "Not responding", "Under 10 backlogs", "Can finish by Apr 2027",
                    "Remarks", "Last changed by"]];
   bs.forEach(b => progs.forEach(p => {

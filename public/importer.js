@@ -443,7 +443,7 @@
          the spreadsheet is reported rather than quietly carried over. */
       const totals = notes.slice();
       if (totalRow) for (const [key, label] of [["admitted", "learners"], ["discontinued", "discontinued"],
-                                                ["graduated", "finished"]]) {
+                                                ["graduated", "graduated"]]) {
         const adds = found.reduce((a, r) => a + (r[key] || 0), 0);
         if (totalRow[key] !== null && totalRow[key] !== adds)
           totals.push(`the ${label} column adds up to ${adds}, but the sheet's Total row says ${totalRow[key]}`);
@@ -456,7 +456,7 @@
         if (r.admitted === null) continue;
         const stayed = r.admitted - (r.discontinued || 0);
         if (r.graduated !== null && r.graduated > stayed)
-          totals.push(`${r.programme}: ${r.graduated} finished, but only ${stayed} of the ${r.admitted} learners stayed`);
+          totals.push(`${r.programme}: ${r.graduated} graduated, but only ${stayed} of the ${r.admitted} learners stayed`);
         if (r.remaining !== null && r.graduated !== null && r.remaining !== stayed - r.graduated)
           totals.push(`${r.programme}: ${r.admitted} − ${r.discontinued || 0} − ${r.graduated} is ${stayed - r.graduated}, but the sheet says ${r.remaining} are left`);
       }
